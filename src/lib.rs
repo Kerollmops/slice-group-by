@@ -14,12 +14,6 @@ where P: FnMut(&T, &T) -> bool,
     pub fn new(slice: &'a [T], predicate: P) -> Self {
         Self { slice, predicate }
     }
-
-    pub fn with_eq(slice: &[T]) -> impl Iterator<Item=&[T]>
-    where T: Eq,
-    {
-        GroupBy { slice, predicate: T::eq }
-    }
 }
 
 impl<'a, T: 'a, P> Iterator for GroupBy<'a, T, P>
