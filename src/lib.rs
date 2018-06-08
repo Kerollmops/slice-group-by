@@ -30,8 +30,12 @@ where P: FnMut(&T, &T) -> bool,
     fn next(&mut self) -> Option<Self::Item> {
         if self.slice.is_empty() { return None }
 
-        for (i, s) in self.slice.windows(2).enumerate() {
-            if !(self.predicate)(&s[0], &s[1]) {
+        let first = self.slice.iter();
+        let mut second = self.slice.iter();
+        second.next();
+
+        for (i, (a, b)) in first.zip(second).enumerate() {
+            if !(self.predicate)(a, b) {
                 let (left, right) = self.slice.split_at(i + 1);
                 self.slice = right;
                 return Some(left)
