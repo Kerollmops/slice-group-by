@@ -1,18 +1,26 @@
 #![feature(test)]
 extern crate test;
 
-use std::mem;
+use std::slice::from_raw_parts;
+use std::marker::PhantomData;
 
 pub struct GroupBy<'a, T: 'a, P> {
-    slice: &'a [T],
+    ptr: *const T,
+    len: usize,
     predicate: P,
+    _phantom: PhantomData<&'a T>,
 }
 
 impl<'a, T: 'a, P> GroupBy<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a [T], predicate: P) -> Self {
-        Self { slice, predicate }
+        Self {
+            ptr: slice.as_ptr(),
+            len: slice.len(),
+            predicate: predicate,
+            _phantom: PhantomData,
+        }
     }
 }
 
@@ -22,22 +30,27 @@ where P: FnMut(&T, &T) -> bool,
     type Item = &'a [T];
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.slice.is_empty() { return None }
+        unsafe {
+            if self.len == 0 { return None }
 
-        let first = self.slice.iter();
-        let mut second = self.slice.iter();
-        second.next();
+            for i in 0..self.len {
+                let a = &*self.ptr.add(i);
+                let b = &*self.ptr.add(i + 1);
 
-        for (i, (a, b)) in first.zip(second).enumerate() {
-            if !(self.predicate)(a, b) {
-                let (left, right) = self.slice.split_at(i + 1);
-                self.slice = right;
-                return Some(left)
+                if !(self.predicate)(a, b) {
+                    let slice = from_raw_parts(self.ptr, i + 1);
+
+                    self.ptr = self.ptr.add(i + 1);
+                    self.len = self.len - (i + 1);
+
+                    return Some(slice)
+                }
             }
-        }
 
-        let old = mem::replace(&mut self.slice, &[]);
-        Some(old)
+            let slice = from_raw_parts(self.ptr, self.len);
+            self.len = 0;
+            Some(slice)
+        }
     }
 }
 
