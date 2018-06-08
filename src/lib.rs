@@ -1,3 +1,6 @@
+#![feature(test)]
+extern crate test;
+
 use std::mem;
 
 pub struct GroupBy<'a, T: 'a, P> {
@@ -42,6 +45,7 @@ where P: FnMut(&T, &T) -> bool,
 
 #[cfg(test)]
 mod tests {
+    extern crate rand;
     use super::*;
 
     #[test]
@@ -117,6 +121,26 @@ mod tests {
         assert_eq!(iter.next(), Some(&[3][..]));
         assert_eq!(iter.next(), Some(&[2][..]));
         assert_eq!(iter.next(), None);
+    }
+
+    #[bench]
+    fn vector_16_000(b: &mut test::Bencher) {
+        use self::rand::{Rng, SeedableRng};
+        use self::rand::rngs::StdRng;
+        use self::rand::distributions::Alphanumeric;
+
+        let mut rng = StdRng::from_seed([42; 32]);
+
+        let len = 16_000;
+        let mut vec = Vec::with_capacity(len);
+        for _ in 0..len {
+            vec.push(rng.sample(Alphanumeric));
+        }
+
+        b.iter(|| {
+            let group_by = GroupBy::new(vec.as_slice(), |&a, &b| a == b);
+            test::black_box(group_by.last())
+        })
     }
 
 }
