@@ -38,7 +38,7 @@ where P: FnMut(&T, &T) -> bool,
         unsafe {
             if self.len == 0 { return None }
 
-            for i in 0..self.len.saturating_sub(1) {
+            for i in 0..self.len - 1 {
                 let a = &*self.ptr.add(i);
                 let b = &*self.ptr.add(i + 1);
 
@@ -62,7 +62,7 @@ where P: FnMut(&T, &T) -> bool,
         unsafe {
             if self.len == 0 { return None }
 
-            for i in (0..self.len.saturating_sub(1)).rev() {
+            for i in (0..self.len - 1).rev() {
                 let a = &*self.ptr.add(i);
                 let b = &*self.ptr.add(i + 1);
 
