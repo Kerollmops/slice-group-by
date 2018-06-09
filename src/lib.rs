@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn one_little_group() {
-        let slice: &[i32] = &[1];
+        let slice = &[1];
 
         let mut iter = group_by_equality(slice);
 
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn one_big_group() {
-        let slice: &[i32] = &[1, 1, 1, 1];
+        let slice = &[1, 1, 1, 1];
 
         let mut iter = GroupBy::new(slice, |&a, &b| a == b);
 
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn two_equal_groups() {
-        let slice: &[i32] = &[1, 1, 1, 1, 2, 2, 2, 2];
+        let slice = &[1, 1, 1, 1, 2, 2, 2, 2];
 
         let mut iter = GroupBy::new(slice, |&a, &b| a == b);
 
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn two_little_equal_groups() {
-        let slice: &[i32] = &[1, 2];
+        let slice = &[1, 2];
 
         let mut iter = GroupBy::new(slice, |&a, &b| a == b);
 
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn three_groups() {
-        let slice: &[i32] = &[1, 1, 1, 3, 3, 2, 2, 2];
+        let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
 
         let mut iter = GroupBy::new(slice, |&a, &b| a == b);
 
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn three_little_groups() {
-        let slice: &[i32] = &[1, 3, 2];
+        let slice = &[1, 3, 2];
 
         let mut iter = GroupBy::new(slice, |&a, &b| a == b);
 
