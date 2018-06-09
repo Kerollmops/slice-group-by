@@ -38,7 +38,7 @@ where P: FnMut(&T, &T) -> bool,
         unsafe {
             if self.len == 0 { return None }
 
-            for i in 0..self.len {
+            for i in 0..self.len.saturating_sub(1) {
                 let a = &*self.ptr.add(i);
                 let b = &*self.ptr.add(i + 1);
 
@@ -136,6 +136,31 @@ mod tests {
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), Some(&[3][..]));
         assert_eq!(iter.next(), Some(&[2][..]));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn overflow() {
+        #[derive(Debug, Eq)]
+        enum Guard {
+            Valid,
+            Invalid,
+        }
+
+        impl PartialEq for Guard {
+            fn eq(&self, other: &Self) -> bool {
+                match (self, other) {
+                    (Guard::Valid, Guard::Valid) => true,
+                    _ => panic!("denied read on Guard::Invalid variant")
+                }
+            }
+        }
+
+        let slice = &[Guard::Valid, Guard::Valid, Guard::Invalid];
+
+        let mut iter = GroupBy::new(&slice[0..2], |a, b| a == b);
+
+        assert_eq!(iter.next(), Some(&[Guard::Valid, Guard::Valid][..]));
         assert_eq!(iter.next(), None);
     }
 
