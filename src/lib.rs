@@ -57,12 +57,47 @@ where P: FnMut(&T, &T) -> bool,
             Some(slice)
         }
     }
+
+    fn last(mut self) -> Option<Self::Item> {
+        unsafe {
+            if self.len == 0 { return None }
+
+            for i in (0..self.len.saturating_sub(1)).rev() {
+                let a = &*self.ptr.add(i);
+                let b = &*self.ptr.add(i + 1);
+
+                if !(self.predicate)(a, b) {
+                    let len = self.len - (i + 1);
+                    let slice = from_raw_parts(self.ptr.add(i + 1), len);
+                    return Some(slice)
+                }
+            }
+
+            let slice = from_raw_parts(self.ptr, self.len);
+            Some(slice)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     extern crate rand;
     use super::*;
+
+    #[derive(Debug, Eq)]
+    enum Guard {
+        Valid,
+        Invalid,
+    }
+
+    impl PartialEq for Guard {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (Guard::Valid, Guard::Valid) => true,
+                _ => panic!("denied read on Guard::Invalid variant")
+            }
+        }
+    }
 
     #[test]
     fn empty_slice() {
@@ -87,7 +122,7 @@ mod tests {
     fn one_big_group() {
         let slice = &[1, 1, 1, 1];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1, 1][..]));
         assert_eq!(iter.next(), None);
@@ -97,7 +132,7 @@ mod tests {
     fn two_equal_groups() {
         let slice = &[1, 1, 1, 1, 2, 2, 2, 2];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1, 1][..]));
         assert_eq!(iter.next(), Some(&[2, 2, 2, 2][..]));
@@ -108,7 +143,7 @@ mod tests {
     fn two_little_equal_groups() {
         let slice = &[1, 2];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
 
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), Some(&[2][..]));
@@ -119,7 +154,7 @@ mod tests {
     fn three_groups() {
         let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
         assert_eq!(iter.next(), Some(&[3, 3][..]));
@@ -131,7 +166,7 @@ mod tests {
     fn three_little_groups() {
         let slice = &[1, 3, 2];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
 
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), Some(&[3][..]));
@@ -141,27 +176,39 @@ mod tests {
 
     #[test]
     fn overflow() {
-        #[derive(Debug, Eq)]
-        enum Guard {
-            Valid,
-            Invalid,
-        }
-
-        impl PartialEq for Guard {
-            fn eq(&self, other: &Self) -> bool {
-                match (self, other) {
-                    (Guard::Valid, Guard::Valid) => true,
-                    _ => panic!("denied read on Guard::Invalid variant")
-                }
-            }
-        }
-
         let slice = &[Guard::Valid, Guard::Valid, Guard::Invalid];
 
         let mut iter = GroupBy::new(&slice[0..2], |a, b| a == b);
 
         assert_eq!(iter.next(), Some(&[Guard::Valid, Guard::Valid][..]));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn last_three_little_groups() {
+        let slice = &[1, 3, 2];
+
+        let iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.last(), Some(&[2][..]));
+    }
+
+    #[test]
+    fn last_three_groups() {
+        let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
+
+        let iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.last(), Some(&[2, 2, 2][..]));
+    }
+
+    #[test]
+    fn last_overflow() {
+        let slice = &[Guard::Valid, Guard::Valid, Guard::Invalid];
+
+        let iter = GroupBy::new(&slice[0..2], |a, b| a == b);
+
+        assert_eq!(iter.last(), Some(&[Guard::Valid, Guard::Valid][..]));
     }
 
     #[bench]
@@ -179,8 +226,8 @@ mod tests {
         }
 
         b.iter(|| {
-            let group_by = GroupBy::new(vec.as_slice(), |&a, &b| a == b);
-            test::black_box(group_by.last())
+            let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
+            test::black_box(group_by.for_each(drop))
         })
     }
 
