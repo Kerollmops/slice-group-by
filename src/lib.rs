@@ -4,6 +4,11 @@ extern crate test;
 use std::slice::from_raw_parts;
 use std::marker::PhantomData;
 
+// Thank you Yorick !
+pub fn group_by_equality<T: Eq>(slice: &[T]) -> impl Iterator<Item=&[T]> {
+    GroupBy::new(slice, PartialEq::eq)
+}
+
 pub struct GroupBy<'a, T: 'a, P> {
     ptr: *const T,
     len: usize,
@@ -63,7 +68,7 @@ mod tests {
     fn empty_slice() {
         let slice: &[i32] = &[];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = group_by_equality(slice);
 
         assert_eq!(iter.next(), None);
     }
@@ -72,7 +77,7 @@ mod tests {
     fn one_little_group() {
         let slice: &[i32] = &[1];
 
-        let mut iter = GroupBy::new(slice, |&a, &b| a == b);
+        let mut iter = group_by_equality(slice);
 
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), None);
