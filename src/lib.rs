@@ -204,9 +204,9 @@ mod tests {
 
     #[test]
     fn last_overflow() {
-        let slice = &[Guard::Valid, Guard::Valid, Guard::Invalid];
+        let slice = &[Guard::Invalid, Guard::Valid, Guard::Valid, Guard::Invalid];
 
-        let iter = GroupBy::new(&slice[0..2], |a, b| a == b);
+        let iter = GroupBy::new(&slice[1..3], |a, b| a == b);
 
         assert_eq!(iter.last(), Some(&[Guard::Valid, Guard::Valid][..]));
     }
