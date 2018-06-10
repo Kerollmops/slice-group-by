@@ -114,21 +114,35 @@ where P: FnMut(&T, &T) -> bool,
     }
 
     fn last(mut self) -> Option<Self::Item> {
-        unsafe {
-            if self.len == 0 { return None }
+        self.next_back()
+    }
+}
 
-            for i in (0..self.len - 1).rev() {
+impl<'a, T: 'a, P> DoubleEndedIterator for GroupBy<'a, T, P>
+where P: FnMut(&T, &T) -> bool,
+{
+
+    fn next_back(&mut self) -> Option<Self::Item> {
+        unsafe {
+            if self.ptr == self.end { return None }
+
+            let len = (self.end as usize - self.ptr as usize) / mem::size_of::<T>();
+            for i in (0..len - 1).rev() {
                 let a = &*self.ptr.add(i);
                 let b = &*self.ptr.add(i + 1);
 
                 if !(self.predicate)(a, b) {
-                    let len = self.len - (i + 1);
-                    let slice = from_raw_parts(self.ptr.add(i + 1), len);
+                    let len = (self.end as usize - self.ptr as usize) / mem::size_of::<T>();
+                    let slice = from_raw_parts(self.ptr.add(i + 1), len - (i + 1));
+
+                    self.end = self.end.sub(len);
                     return Some(slice)
                 }
             }
 
-            let slice = from_raw_parts(self.ptr, self.len);
+            let len = (self.end as usize - self.ptr as usize) / mem::size_of::<T>();
+            let slice = from_raw_parts(self.ptr, len);
+            self.ptr = self.end;
             Some(slice)
         }
     }
@@ -264,6 +278,26 @@ mod tests {
         let iter = GroupBy::new(&slice[1..3], |a, b| a == b);
 
         assert_eq!(iter.last(), Some(&[Guard::Valid, Guard::Valid][..]));
+    }
+
+    #[test]
+    fn back_empty_slice() {
+        let slice: &[i32] = &[];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn back_one_little_group() {
+        let slice = &[1];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next_back(), Some(&[1][..]));
+        assert_eq!(iter.next_back(), None);
+        assert_eq!(iter.next(), None);
     }
 
     #[bench]
