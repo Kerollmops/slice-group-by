@@ -375,6 +375,16 @@ mod tests {
     }
 
     #[bench]
+    fn vector_16_000_one_group(b: &mut test::Bencher) {
+        let vec = vec![1; 16_000];
+
+        b.iter(|| {
+            let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
+            test::black_box(group_by.for_each(drop))
+        })
+    }
+
+    #[bench]
     fn rev_vector_16_000(b: &mut test::Bencher) {
         use self::rand::{Rng, SeedableRng};
         use self::rand::rngs::StdRng;
@@ -387,6 +397,16 @@ mod tests {
         for _ in 0..len {
             vec.push(rng.sample(Alphanumeric));
         }
+
+        b.iter(|| {
+            let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
+            test::black_box(group_by.rev().for_each(drop))
+        })
+    }
+
+    #[bench]
+    fn rev_vector_16_000_one_group(b: &mut test::Bencher) {
+        let vec = vec![1; 16_000];
 
         b.iter(|| {
             let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
