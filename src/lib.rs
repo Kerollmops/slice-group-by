@@ -1,8 +1,9 @@
 #![feature(test)]
 extern crate test;
 
-use std::marker::PhantomData;
 use std::iter::FusedIterator;
+use std::marker::PhantomData;
+use std::mem::size_of;
 use std::slice::from_raw_parts;
 
 // Thank you Yorick !
@@ -60,6 +61,12 @@ where P: FnMut(&T, &T) -> bool,
             self.ptr = self.end;
             Some(slice)
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let lower = if self.ptr == self.end { 0 } else { 1 };
+        let upper = (self.end as usize - self.ptr as usize) / size_of::<T>();
+        (lower, Some(upper))
     }
 
     fn last(mut self) -> Option<Self::Item> {
