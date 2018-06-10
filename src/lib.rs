@@ -1,8 +1,58 @@
 #![feature(test)]
 extern crate test;
 
-use std::slice::from_raw_parts;
 use std::marker::PhantomData;
+use std::{mem, iter};
+use std::slice::from_raw_parts;
+
+macro_rules! slice_offset {
+    ($ptr:expr, $by:expr) => {{
+        let ptr = $ptr;
+        if size_from_ptr(ptr) == 0 {
+            (ptr as *mut i8).wrapping_offset($by) as _
+        } else {
+            ptr.offset($by)
+        }
+    }};
+}
+
+#[inline]
+fn size_from_ptr<T>(_: *const T) -> usize {
+    mem::size_of::<T>()
+}
+
+trait PointerExt : Copy {
+    unsafe fn slice_offset(self, i: isize) -> Self;
+
+    /// Increments `self` by 1, but returns the old value.
+    #[inline(always)]
+    unsafe fn post_inc(&mut self) -> Self {
+        let current = *self;
+        *self = self.slice_offset(1);
+        current
+    }
+
+    /// Decrements `self` by 1, and returns the new value.
+    #[inline(always)]
+    unsafe fn pre_dec(&mut self) -> Self {
+        *self = self.slice_offset(-1);
+        *self
+    }
+}
+
+impl<T> PointerExt for *const T {
+    #[inline(always)]
+    unsafe fn slice_offset(self, i: isize) -> Self {
+        slice_offset!(self, i)
+    }
+}
+
+impl<T> PointerExt for *mut T {
+    #[inline(always)]
+    unsafe fn slice_offset(self, i: isize) -> Self {
+        slice_offset!(self, i)
+    }
+}
 
 // Thank you Yorick !
 pub fn group_by_equality<T: Eq>(slice: &[T]) -> impl Iterator<Item=&[T]> {
@@ -11,7 +61,7 @@ pub fn group_by_equality<T: Eq>(slice: &[T]) -> impl Iterator<Item=&[T]> {
 
 pub struct GroupBy<'a, T: 'a, P> {
     ptr: *const T,
-    len: usize,
+    end: *const T,
     predicate: P,
     _phantom: PhantomData<&'a T>,
 }
@@ -22,7 +72,7 @@ where P: FnMut(&T, &T) -> bool,
     pub fn new(slice: &'a [T], predicate: P) -> Self {
         Self {
             ptr: slice.as_ptr(),
-            len: slice.len(),
+            end: unsafe { slice.as_ptr().add(slice.len()) },
             predicate: predicate,
             _phantom: PhantomData,
         }
@@ -36,24 +86,29 @@ where P: FnMut(&T, &T) -> bool,
 
     fn next(&mut self) -> Option<Self::Item> {
         unsafe {
-            if self.len == 0 { return None }
+            if self.ptr == self.end { return None }
 
-            for i in 0..self.len - 1 {
-                let a = &*self.ptr.add(i);
-                let b = &*self.ptr.add(i + 1);
+            let mut i = 0;
+            let mut ptr = self.ptr;
+
+            let end = self.end as usize - mem::size_of::<T>();
+            while ptr as usize != end {
+
+                let a = &*ptr;
+                ptr = ptr.offset(1);
+                let b = &*ptr;
+
+                i += 1;
 
                 if !(self.predicate)(a, b) {
-                    let slice = from_raw_parts(self.ptr, i + 1);
-
-                    self.ptr = self.ptr.add(i + 1);
-                    self.len = self.len - (i + 1);
-
+                    let slice = from_raw_parts(self.ptr, i);
+                    self.ptr = ptr;
                     return Some(slice)
                 }
             }
 
-            let slice = from_raw_parts(self.ptr, self.len);
-            self.len = 0;
+            let slice = from_raw_parts(self.ptr, i + 1);
+            self.ptr = self.end;
             Some(slice)
         }
     }
