@@ -91,11 +91,9 @@ where P: FnMut(&T, &T) -> bool,
             let mut i = 0;
             let mut ptr = self.ptr;
 
-            let end = self.end as usize - mem::size_of::<T>();
-            while ptr as usize != end {
-
+            while ptr != self.end.sub(1) {
                 let a = &*ptr;
-                ptr = ptr.offset(1);
+                ptr = ptr.add(1);
                 let b = &*ptr;
 
                 i += 1;
@@ -126,27 +124,35 @@ where P: FnMut(&T, &T) -> bool,
         unsafe {
             if self.ptr == self.end { return None }
 
-            let len = (self.end as usize - self.ptr as usize) / mem::size_of::<T>();
-            for i in (0..len - 1).rev() {
-                let a = &*self.ptr.add(i);
-                let b = &*self.ptr.add(i + 1);
+            let mut i = 0;
+            let mut ptr = self.end.sub(1);
 
-                if !(self.predicate)(a, b) {
-                    let len = (self.end as usize - self.ptr as usize) / mem::size_of::<T>();
-                    let slice = from_raw_parts(self.ptr.add(i + 1), len - (i + 1));
+            while ptr != self.ptr {
+                let a = &*ptr;
+                let b = &*ptr.sub(1);
 
-                    self.end = self.end.sub(len);
+                i += 1;
+
+                // swap a and b to call the predicate correctly
+                if !(self.predicate)(b, a) {
+                    let slice = from_raw_parts(ptr, i);
+                    self.end = ptr;
                     return Some(slice)
                 }
+
+                ptr = ptr.sub(1);
             }
 
-            let len = (self.end as usize - self.ptr as usize) / mem::size_of::<T>();
-            let slice = from_raw_parts(self.ptr, len);
+            let slice = from_raw_parts(self.ptr, i + 1);
             self.ptr = self.end;
             Some(slice)
         }
     }
 }
+
+impl<'a, T: 'a, P> iter::FusedIterator for GroupBy<'a, T, P>
+where P: FnMut(&T, &T) -> bool,
+{ }
 
 #[cfg(test)]
 mod tests {
@@ -155,15 +161,15 @@ mod tests {
 
     #[derive(Debug, Eq)]
     enum Guard {
-        Valid,
-        Invalid,
+        Valid(i32),
+        Invalid(i32),
     }
 
     impl PartialEq for Guard {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (Guard::Valid, Guard::Valid) => true,
-                _ => panic!("denied read on Guard::Invalid variant")
+                (Guard::Valid(_), Guard::Valid(_)) => true,
+                (a, b) => panic!("denied read on Guard::Invalid variant ({:?}, {:?})", a, b),
             }
         }
     }
@@ -245,11 +251,11 @@ mod tests {
 
     #[test]
     fn overflow() {
-        let slice = &[Guard::Valid, Guard::Valid, Guard::Invalid];
+        let slice = &[Guard::Invalid(0), Guard::Valid(1), Guard::Valid(2), Guard::Invalid(3)];
 
-        let mut iter = GroupBy::new(&slice[0..2], |a, b| a == b);
+        let mut iter = GroupBy::new(&slice[1..3], |a, b| a == b);
 
-        assert_eq!(iter.next(), Some(&[Guard::Valid, Guard::Valid][..]));
+        assert_eq!(iter.next(), Some(&[Guard::Valid(1), Guard::Valid(2)][..]));
         assert_eq!(iter.next(), None);
     }
 
@@ -273,11 +279,13 @@ mod tests {
 
     #[test]
     fn last_overflow() {
-        let slice = &[Guard::Invalid, Guard::Valid, Guard::Valid, Guard::Invalid];
+        let slice = &[Guard::Invalid(0), Guard::Valid(1), Guard::Valid(2), Guard::Invalid(3)];
+
+        println!("{:?}", (&slice[1..3]).as_ptr());
 
         let iter = GroupBy::new(&slice[1..3], |a, b| a == b);
 
-        assert_eq!(iter.last(), Some(&[Guard::Valid, Guard::Valid][..]));
+        assert_eq!(iter.last(), Some(&[Guard::Valid(1), Guard::Valid(2)][..]));
     }
 
     #[test]
@@ -300,6 +308,56 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 
+    #[test]
+    fn back_three_little_groups() {
+        let slice = &[1, 3, 2];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next_back(), Some(&[2][..]));
+        assert_eq!(iter.next_back(), Some(&[3][..]));
+        assert_eq!(iter.next_back(), Some(&[1][..]));
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn back_three_groups() {
+        let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next_back(), Some(&[2, 2, 2][..]));
+        assert_eq!(iter.next_back(), Some(&[3, 3][..]));
+        assert_eq!(iter.next_back(), Some(&[1, 1, 1][..]));
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn fused_iterator() {
+        let slice = &[1, 2, 3];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next(), Some(&[1][..]));
+        assert_eq!(iter.next(), Some(&[2][..]));
+        assert_eq!(iter.next(), Some(&[3][..]));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn back_fused_iterator() {
+        let slice = &[1, 2, 3];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next_back(), Some(&[3][..]));
+        assert_eq!(iter.next_back(), Some(&[2][..]));
+        assert_eq!(iter.next_back(), Some(&[1][..]));
+        assert_eq!(iter.next_back(), None);
+        assert_eq!(iter.next_back(), None);
+    }
+
     #[bench]
     fn vector_16_000(b: &mut test::Bencher) {
         use self::rand::{Rng, SeedableRng};
@@ -320,4 +378,23 @@ mod tests {
         })
     }
 
+    #[bench]
+    fn rev_vector_16_000(b: &mut test::Bencher) {
+        use self::rand::{Rng, SeedableRng};
+        use self::rand::rngs::StdRng;
+        use self::rand::distributions::Alphanumeric;
+
+        let mut rng = StdRng::from_seed([42; 32]);
+
+        let len = 16_000;
+        let mut vec = Vec::with_capacity(len);
+        for _ in 0..len {
+            vec.push(rng.sample(Alphanumeric));
+        }
+
+        b.iter(|| {
+            let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
+            test::black_box(group_by.rev().for_each(drop))
+        })
+    }
 }
