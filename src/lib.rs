@@ -2,57 +2,8 @@
 extern crate test;
 
 use std::marker::PhantomData;
-use std::{mem, iter};
+use std::iter::FusedIterator;
 use std::slice::from_raw_parts;
-
-macro_rules! slice_offset {
-    ($ptr:expr, $by:expr) => {{
-        let ptr = $ptr;
-        if size_from_ptr(ptr) == 0 {
-            (ptr as *mut i8).wrapping_offset($by) as _
-        } else {
-            ptr.offset($by)
-        }
-    }};
-}
-
-#[inline]
-fn size_from_ptr<T>(_: *const T) -> usize {
-    mem::size_of::<T>()
-}
-
-trait PointerExt : Copy {
-    unsafe fn slice_offset(self, i: isize) -> Self;
-
-    /// Increments `self` by 1, but returns the old value.
-    #[inline(always)]
-    unsafe fn post_inc(&mut self) -> Self {
-        let current = *self;
-        *self = self.slice_offset(1);
-        current
-    }
-
-    /// Decrements `self` by 1, and returns the new value.
-    #[inline(always)]
-    unsafe fn pre_dec(&mut self) -> Self {
-        *self = self.slice_offset(-1);
-        *self
-    }
-}
-
-impl<T> PointerExt for *const T {
-    #[inline(always)]
-    unsafe fn slice_offset(self, i: isize) -> Self {
-        slice_offset!(self, i)
-    }
-}
-
-impl<T> PointerExt for *mut T {
-    #[inline(always)]
-    unsafe fn slice_offset(self, i: isize) -> Self {
-        slice_offset!(self, i)
-    }
-}
 
 // Thank you Yorick !
 pub fn group_by_equality<T: Eq>(slice: &[T]) -> impl Iterator<Item=&[T]> {
@@ -150,7 +101,7 @@ where P: FnMut(&T, &T) -> bool,
     }
 }
 
-impl<'a, T: 'a, P> iter::FusedIterator for GroupBy<'a, T, P>
+impl<'a, T: 'a, P> FusedIterator for GroupBy<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 { }
 
