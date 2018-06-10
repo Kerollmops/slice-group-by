@@ -284,6 +284,19 @@ mod tests {
     }
 
     #[test]
+    fn double_ended_dont_cross() {
+        let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
+
+        let mut iter = GroupBy::new(slice, |a, b| a == b);
+
+        assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
+        assert_eq!(iter.next_back(), Some(&[2, 2, 2][..]));
+        assert_eq!(iter.next(), Some(&[3, 3][..]));
+        assert_eq!(iter.next_back(), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
     fn fused_iterator() {
         let slice = &[1, 2, 3];
 
@@ -306,6 +319,31 @@ mod tests {
         assert_eq!(iter.next_back(), Some(&[2][..]));
         assert_eq!(iter.next_back(), Some(&[1][..]));
         assert_eq!(iter.next_back(), None);
+        assert_eq!(iter.next_back(), None);
+    }
+
+    fn panic_param_ord(a: &i32, b: &i32) -> bool {
+        if a < b { true }
+        else { panic!("params are not in the right order") }
+    }
+
+    #[test]
+    fn predicate_call_param_order() {
+        let slice = &[1, 2, 3, 4, 5];
+
+        let mut iter = GroupBy::new(slice, panic_param_ord);
+
+        assert_eq!(iter.next(), Some(&[1, 2, 3, 4, 5][..]));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn rev_predicate_call_param_order() {
+        let slice = &[1, 2, 3, 4, 5];
+
+        let mut iter = GroupBy::new(slice, panic_param_ord);
+
+        assert_eq!(iter.next_back(), Some(&[1, 2, 3, 4, 5][..]));
         assert_eq!(iter.next_back(), None);
     }
 
