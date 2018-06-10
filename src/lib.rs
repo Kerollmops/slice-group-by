@@ -370,7 +370,7 @@ mod tests {
 
         b.iter(|| {
             let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
-            test::black_box(group_by.for_each(drop))
+            test::black_box(group_by.count())
         })
     }
 
@@ -380,7 +380,7 @@ mod tests {
 
         b.iter(|| {
             let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
-            test::black_box(group_by.for_each(drop))
+            test::black_box(group_by.count())
         })
     }
 
@@ -400,7 +400,7 @@ mod tests {
 
         b.iter(|| {
             let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
-            test::black_box(group_by.rev().for_each(drop))
+            test::black_box(group_by.rev().count())
         })
     }
 
@@ -410,7 +410,7 @@ mod tests {
 
         b.iter(|| {
             let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
-            test::black_box(group_by.rev().for_each(drop))
+            test::black_box(group_by.rev().count())
         })
     }
 }
