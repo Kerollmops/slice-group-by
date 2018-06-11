@@ -30,6 +30,11 @@ where P: FnMut(&T, &T) -> bool,
             _phantom: PhantomData,
         }
     }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.ptr == self.end
+    }
 }
 
 impl<'a, T: 'a, P> Iterator for GroupBy<'a, T, P>
@@ -39,7 +44,7 @@ where P: FnMut(&T, &T) -> bool,
 
     fn next(&mut self) -> Option<Self::Item> {
         unsafe {
-            if self.ptr == self.end { return None }
+            if self.is_empty() { return None }
 
             let mut i = 0;
             let mut ptr = self.ptr;
@@ -77,10 +82,9 @@ where P: FnMut(&T, &T) -> bool,
 impl<'a, T: 'a, P> DoubleEndedIterator for GroupBy<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
-
     fn next_back(&mut self) -> Option<Self::Item> {
         unsafe {
-            if self.ptr == self.end { return None }
+            if self.is_empty() { return None }
 
             let mut i = 0;
             let mut ptr = self.end.sub(1);
@@ -116,6 +120,10 @@ where P: FnMut(&T, &T) -> bool,
 mod tests {
     extern crate rand;
     use super::*;
+
+    use self::rand::{Rng, SeedableRng};
+    use self::rand::rngs::StdRng;
+    use self::rand::distributions::Alphanumeric;
 
     #[derive(Debug, Eq)]
     enum Guard {
@@ -356,10 +364,6 @@ mod tests {
 
     #[bench]
     fn vector_16_000(b: &mut test::Bencher) {
-        use self::rand::{Rng, SeedableRng};
-        use self::rand::rngs::StdRng;
-        use self::rand::distributions::Alphanumeric;
-
         let mut rng = StdRng::from_seed([42; 32]);
 
         let len = 16_000;
@@ -386,10 +390,6 @@ mod tests {
 
     #[bench]
     fn rev_vector_16_000(b: &mut test::Bencher) {
-        use self::rand::{Rng, SeedableRng};
-        use self::rand::rngs::StdRng;
-        use self::rand::distributions::Alphanumeric;
-
         let mut rng = StdRng::from_seed([42; 32]);
 
         let len = 16_000;
