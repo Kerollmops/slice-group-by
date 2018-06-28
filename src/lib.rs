@@ -4,19 +4,144 @@
 extern crate test;
 
 use std::iter::FusedIterator;
-use std::marker::PhantomData;
-use std::slice::from_raw_parts;
+use std::marker;
+use std::slice::{from_raw_parts, from_raw_parts_mut};
 
 // Thank you Yorick !
 pub fn group_by_equality<T: Eq>(slice: &[T]) -> impl Iterator<Item=&[T]> {
     GroupBy::new(slice, PartialEq::eq)
 }
 
+macro_rules! group_by {
+    (struct $name:ident, $elem:ty, $mkslice:ident) => {
+        impl<'a, T: 'a, P> $name<'a, T, P> {
+            #[inline]
+            fn is_empty(&self) -> bool {
+                self.ptr == self.end
+            }
+
+            #[inline]
+            fn remaining_len(&self) -> usize {
+                unsafe { self.end.offset_from(self.ptr) as usize }
+            }
+        }
+
+        impl<'a, T: 'a, P> Iterator for $name<'a, T, P>
+        where P: FnMut(&T, &T) -> bool,
+        {
+            type Item = $elem;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                // we use an unsafe block to avoid bounds checking here.
+                // this is safe because the only thing we do here is to get
+                // two elements at `ptr` and `ptr + 1`, bounds checking is done by hand.
+                unsafe {
+                    if self.is_empty() { return None }
+
+                    let mut i = 0;
+                    let mut ptr = self.ptr;
+
+                    // we need to get *two* contiguous elements so we check that:
+                    //  - the first element is at the `end - 1` position because
+                    //  - the second one will be read from `ptr + 1` that must
+                    //    be lower or equal to `end`
+                    while ptr != self.end.sub(1) {
+                        let a = &*ptr;
+                        ptr = ptr.add(1);
+                        let b = &*ptr;
+
+                        i += 1;
+
+                        if !(self.predicate)(a, b) {
+                            let slice = $mkslice(self.ptr, i);
+                            self.ptr = ptr;
+                            return Some(slice)
+                        }
+                    }
+
+                    // `i` is either `0` or the slice `length - 1` because either:
+                    //  - we have not entered the loop and so `i` is equal to `0`
+                    //    the slice length is necessarily `1` because we ensure it is not empty
+                    //  - we have entered the loop and we have not early returned
+                    //    so `i` is equal to the slice `length - 1`
+                    let slice = $mkslice(self.ptr, i + 1);
+                    self.ptr = self.end;
+                    Some(slice)
+                }
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                if self.is_empty() { return (0, Some(0)) }
+
+                let len = self.remaining_len();
+                (1, Some(len))
+            }
+
+            fn last(mut self) -> Option<Self::Item> {
+                self.next_back()
+            }
+        }
+
+        impl<'a, T: 'a, P> DoubleEndedIterator for $name<'a, T, P>
+        where P: FnMut(&T, &T) -> bool,
+        {
+            fn next_back(&mut self) -> Option<Self::Item> {
+                // during the loop we retrieve two elements at `ptr` and `ptr - 1`.
+                unsafe {
+                    if self.is_empty() { return None }
+
+                    let mut i = 0;
+                    // we ensure that the first element that will be read
+                    // is not under `end` because `end` is out of bound.
+                    let mut ptr = self.end.sub(1);
+
+                    while ptr != self.ptr {
+                        // we first get `a` that is at the left of `ptr`
+                        // then `b` that is under the `ptr` position.
+                        let a = &*ptr.sub(1);
+                        let b = &*ptr;
+
+                        i += 1;
+
+                        if !(self.predicate)(a, b) {
+                            // the slice to return starts at the `ptr` position
+                            // and `i` is the length of it.
+                            let slice = $mkslice(ptr, i);
+
+                            // because `end` is always an invalid bound
+                            // we use `ptr` as `end` for the future call to `next`.
+                            self.end = ptr;
+                            return Some(slice)
+                        }
+
+                        ptr = ptr.sub(1);
+                    }
+
+                    let slice = $mkslice(self.ptr, i + 1);
+                    self.ptr = self.end;
+                    Some(slice)
+                }
+            }
+        }
+
+        impl<'a, T: 'a, P> FusedIterator for $name<'a, T, P>
+        where P: FnMut(&T, &T) -> bool,
+        { }
+    }
+}
+
+/// An iterator over slice in (non-overlapping) chunks separated by a predicate.
+///
+/// This struct is created by the [`group_by`] method on [slices].
+///
+/// [`group_by`]: ../../std/primitive.slice.html#method.group_by
+/// [slices]: ../../std/primitive.slice.html
+#[derive(Debug)] // FIXME implement Debug to be more user friendly
 pub struct GroupBy<'a, T: 'a, P> {
     ptr: *const T,
     end: *const T,
     predicate: P,
-    _phantom: PhantomData<&'a T>,
+    _phantom: marker::PhantomData<&'a T>,
 }
 
 impl<'a, T: 'a, P> GroupBy<'a, T, P>
@@ -27,94 +152,56 @@ where P: FnMut(&T, &T) -> bool,
             ptr: slice.as_ptr(),
             end: unsafe { slice.as_ptr().add(slice.len()) },
             predicate: predicate,
-            _phantom: PhantomData,
+            _phantom: marker::PhantomData,
         }
     }
 
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.ptr == self.end
+    /// Returns the remainder of the original slice that is going to be
+    /// returned by the iterator.
+    pub fn remaining(&self) -> &[T] {
+        let len = self.remaining_len();
+        unsafe { from_raw_parts(self.ptr, len) }
     }
 }
 
-impl<'a, T: 'a, P> Iterator for GroupBy<'a, T, P>
+group_by!{ struct GroupBy, &'a [T], from_raw_parts }
+
+/// An iterator over slice in (non-overlapping) mutable chunks separated
+/// by a predicate.
+///
+/// This struct is created by the [`group_by_mut`] method on [slices].
+///
+/// [`group_by_mut`]: ../../std/primitive.slice.html#method.group_by_mut
+/// [slices]: ../../std/primitive.slice.html
+#[derive(Debug)] // FIXME implement Debug to be more user friendly
+pub struct GroupByMut<'a, T: 'a, P> {
+    ptr: *mut T,
+    end: *mut T,
+    predicate: P,
+    _phantom: marker::PhantomData<&'a T>,
+}
+
+impl<'a, T: 'a, P> GroupByMut<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
-    type Item = &'a [T];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        unsafe {
-            if self.is_empty() { return None }
-
-            let mut i = 0;
-            let mut ptr = self.ptr;
-
-            while ptr != self.end.sub(1) {
-                let a = &*ptr;
-                ptr = ptr.add(1);
-                let b = &*ptr;
-
-                i += 1;
-
-                if !(self.predicate)(a, b) {
-                    let slice = from_raw_parts(self.ptr, i);
-                    self.ptr = ptr;
-                    return Some(slice)
-                }
-            }
-
-            let slice = from_raw_parts(self.ptr, i + 1);
-            self.ptr = self.end;
-            Some(slice)
+    pub fn new(slice: &'a mut [T], predicate: P) -> Self {
+        Self {
+            ptr: slice.as_mut_ptr(),
+            end: unsafe { slice.as_mut_ptr().add(slice.len()) },
+            predicate: predicate,
+            _phantom: marker::PhantomData,
         }
     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let upper = unsafe { self.end.offset_from(self.ptr) as usize };
-        if upper == 0 { (0, None) } else { (1, Some(upper)) }
-    }
-
-    fn last(mut self) -> Option<Self::Item> {
-        self.next_back()
+    /// Returns the remainder of the original slice that is going to be
+    /// returned by the iterator.
+    pub fn into_remaining(self) -> &'a mut [T] {
+        let len = self.remaining_len();
+        unsafe { from_raw_parts_mut(self.ptr, len) }
     }
 }
 
-impl<'a, T: 'a, P> DoubleEndedIterator for GroupBy<'a, T, P>
-where P: FnMut(&T, &T) -> bool,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        unsafe {
-            if self.is_empty() { return None }
-
-            let mut i = 0;
-            let mut ptr = self.end.sub(1);
-
-            while ptr != self.ptr {
-                let a = &*ptr;
-                let b = &*ptr.sub(1);
-
-                i += 1;
-
-                // swap a and b to call the predicate correctly
-                if !(self.predicate)(b, a) {
-                    let slice = from_raw_parts(ptr, i);
-                    self.end = ptr;
-                    return Some(slice)
-                }
-
-                ptr = ptr.sub(1);
-            }
-
-            let slice = from_raw_parts(self.ptr, i + 1);
-            self.ptr = self.end;
-            Some(slice)
-        }
-    }
-}
-
-impl<'a, T: 'a, P> FusedIterator for GroupBy<'a, T, P>
-where P: FnMut(&T, &T) -> bool,
-{ }
+group_by!{ struct GroupByMut, &'a mut [T], from_raw_parts_mut }
 
 #[cfg(test)]
 mod tests {
