@@ -1,10 +1,7 @@
-#![feature(ptr_offset_from)]
-
-#![feature(test)]
-extern crate test;
+#![cfg_attr(feature = "unstable", feature(test))]
 
 use std::iter::FusedIterator;
-use std::marker;
+use std::{marker, mem, isize};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
 // Thank you Yorick !
@@ -22,7 +19,13 @@ macro_rules! group_by {
 
             #[inline]
             fn remaining_len(&self) -> usize {
-                unsafe { self.end.offset_from(self.ptr) as usize }
+                // unsafe { self.end.offset_from(self.ptr) as usize }
+
+                let pointee_size = mem::size_of::<T>();
+                assert!(0 < pointee_size && pointee_size <= isize::max_value() as usize);
+
+                let d = isize::wrapping_sub(self.ptr as _, self.end as _);
+                (d as usize / pointee_size)
             }
         }
 
@@ -205,12 +208,7 @@ group_by!{ struct GroupByMut, &'a mut [T], from_raw_parts_mut }
 
 #[cfg(test)]
 mod tests {
-    extern crate rand;
     use super::*;
-
-    use self::rand::{Rng, SeedableRng};
-    use self::rand::rngs::StdRng;
-    use self::rand::distributions::Alphanumeric;
 
     #[derive(Debug, Eq)]
     enum Guard {
@@ -448,6 +446,17 @@ mod tests {
         assert_eq!(iter.next_back(), Some(&[1, 2, 3, 4, 5][..]));
         assert_eq!(iter.next_back(), None);
     }
+}
+
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    extern crate test;
+    extern crate rand;
+
+    use super::*;
+    use self::rand::{Rng, SeedableRng};
+    use self::rand::rngs::StdRng;
+    use self::rand::distributions::Alphanumeric;
 
     #[bench]
     fn vector_16_000(b: &mut test::Bencher) {

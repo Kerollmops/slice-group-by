@@ -7,3 +7,6 @@ authors = ["clementrenault <crenault@vente-privee.com>"]
 
 [dev-dependencies]
 rand = "0.5"
+
+[features]
+unstable = []
