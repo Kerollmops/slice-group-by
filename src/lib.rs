@@ -1,12 +1,26 @@
-#![cfg_attr(feature = "unstable", feature(test))]
+#![cfg_attr(feature = "nightly", feature(ptr_offset_from))]
+#![cfg_attr(feature = "nightly", feature(test))]
 
-use std::iter::FusedIterator;
-use std::{marker, mem, isize};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
+use std::iter::FusedIterator;
+use std::marker;
 
 // Thank you Yorick !
 pub fn group_by_equality<T: Eq>(slice: &[T]) -> impl Iterator<Item=&[T]> {
     GroupBy::new(slice, PartialEq::eq)
+}
+
+#[cfg(feature = "nightly")]
+#[inline]
+unsafe fn offset_from<T>(to: *const T, from: *const T) -> usize {
+    to.offset_from(from) as usize
+}
+
+#[cfg(not(feature = "nightly"))]
+#[inline]
+unsafe fn offset_from<T>(to: *const T, from: *const T) -> usize {
+    use std::mem;
+    (to as usize - from as usize) / mem::size_of::<T>()
 }
 
 macro_rules! group_by {
@@ -19,13 +33,7 @@ macro_rules! group_by {
 
             #[inline]
             fn remaining_len(&self) -> usize {
-                // unsafe { self.end.offset_from(self.ptr) as usize }
-
-                let pointee_size = mem::size_of::<T>();
-                assert!(0 < pointee_size && pointee_size <= isize::max_value() as usize);
-
-                let d = isize::wrapping_sub(self.ptr as _, self.end as _);
-                (d as usize / pointee_size)
+                unsafe { offset_from(self.end, self.ptr) }
             }
         }
 
@@ -448,7 +456,7 @@ mod tests {
     }
 }
 
-#[cfg(all(feature = "unstable", test))]
+#[cfg(all(feature = "nightly", test))]
 mod bench {
     extern crate test;
     extern crate rand;

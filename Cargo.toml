@@ -9,4 +9,4 @@ authors = ["clementrenault <crenault@vente-privee.com>"]
 rand = "0.5"
 
 [features]
-unstable = []
+nightly = []
