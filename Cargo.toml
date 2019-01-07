@@ -1,7 +1,7 @@
 [package]
 name = "group-by"
 version = "0.1.0"
-authors = ["clementrenault <crenault@vente-privee.com>"]
+authors = ["Kerollmops <renault.cle@gmail.com>"]
 
 [dependencies]
 
