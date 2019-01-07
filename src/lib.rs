@@ -483,6 +483,42 @@ mod bench {
     }
 
     #[bench]
+    fn vector_16_000_sorted(b: &mut test::Bencher) {
+        let mut rng = StdRng::from_seed([42; 32]);
+
+        let len = 16_000;
+        let mut vec = Vec::with_capacity(len);
+        for _ in 0..len {
+            vec.push(rng.sample(Alphanumeric));
+        }
+
+        vec.sort_unstable();
+
+        b.iter(|| {
+            let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
+            test::black_box(group_by.count())
+        })
+    }
+
+    #[bench]
+    fn vector_little_sorted(b: &mut test::Bencher) {
+        let mut rng = StdRng::from_seed([42; 32]);
+
+        let len = 30;
+        let mut vec = Vec::with_capacity(len);
+        for _ in 0..len {
+            vec.push(rng.sample(Alphanumeric));
+        }
+
+        vec.sort_unstable();
+
+        b.iter(|| {
+            let group_by = GroupBy::new(vec.as_slice(), |a, b| a == b);
+            test::black_box(group_by.count())
+        })
+    }
+
+    #[bench]
     fn vector_16_000_one_group(b: &mut test::Bencher) {
         let vec = vec![1; 16_000];
 
