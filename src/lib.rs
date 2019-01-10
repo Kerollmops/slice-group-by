@@ -1,6 +1,10 @@
 #![cfg_attr(feature = "nightly", feature(ptr_offset_from))]
 #![cfg_attr(feature = "nightly", feature(test))]
 
+mod binary_group_by;
+
+pub use self::binary_group_by::{BinaryGroupBy, BinaryGroupByMut};
+
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::iter::FusedIterator;
 use std::marker;
