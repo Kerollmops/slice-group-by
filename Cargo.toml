@@ -5,6 +5,7 @@ version = "0.1.0"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
 
 [dependencies]
+sdset = "0.3"
 
 [dev-dependencies]
 rand = "0.5"

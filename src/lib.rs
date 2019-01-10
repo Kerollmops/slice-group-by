@@ -2,8 +2,10 @@
 #![cfg_attr(feature = "nightly", feature(test))]
 
 mod binary_group_by;
+mod exponential_group_by;
 
 pub use self::binary_group_by::{BinaryGroupBy, BinaryGroupByMut};
+pub use self::exponential_group_by::{ExponentialGroupBy, ExponentialGroupByMut};
 
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::iter::FusedIterator;
