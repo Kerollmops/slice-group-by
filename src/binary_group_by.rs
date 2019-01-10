@@ -257,22 +257,6 @@ mod bench {
     use self::rand::distributions::Alphanumeric;
 
     #[bench]
-    fn vector_16_000(b: &mut test::Bencher) {
-        let mut rng = StdRng::from_seed([42; 32]);
-
-        let len = 16_000;
-        let mut vec = Vec::with_capacity(len);
-        for _ in 0..len {
-            vec.push(rng.sample(Alphanumeric));
-        }
-
-        b.iter(|| {
-            let group_by = BinaryGroupBy::new(vec.as_slice(), |a, b| a == b);
-            test::black_box(group_by.count())
-        })
-    }
-
-    #[bench]
     fn vector_16_000_sorted(b: &mut test::Bencher) {
         let mut rng = StdRng::from_seed([42; 32]);
 
