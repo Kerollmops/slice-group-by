@@ -149,7 +149,9 @@ where P: FnMut(&T, &T) -> bool,
             _phantom: marker::PhantomData,
         }
     }
+}
 
+impl<'a, T: 'a, P> LinearGroupBy<'a, T, P> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn remainder(&self) -> &[T] {
@@ -186,7 +188,9 @@ where P: FnMut(&T, &T) -> bool,
             _phantom: marker::PhantomData,
         }
     }
+}
 
+impl<'a, T: 'a, P> LinearGroupByMut<'a, T, P> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn into_remainder(self) -> &'a mut [T] {
