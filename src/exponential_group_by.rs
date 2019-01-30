@@ -78,7 +78,7 @@ where P: FnMut(&T, &T) -> bool,
 
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
-    pub fn remaining(&self) -> &[T] {
+    pub fn remainder(&self) -> &[T] {
         let len = self.remaining_len();
         unsafe { from_raw_parts(self.ptr, len) }
     }
@@ -107,7 +107,7 @@ where P: FnMut(&T, &T) -> bool,
 
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
-    pub fn into_remaining(self) -> &'a mut [T] {
+    pub fn into_remainder(self) -> &'a mut [T] {
         let len = self.remaining_len();
         unsafe { from_raw_parts_mut(self.ptr, len) }
     }
