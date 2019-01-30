@@ -14,7 +14,7 @@ macro_rules! binary_group_by {
             }
 
             #[inline]
-            fn remaining_len(&self) -> usize {
+            fn remainder_len(&self) -> usize {
                 unsafe { offset_from(self.end, self.ptr) }
             }
         }
@@ -29,7 +29,7 @@ macro_rules! binary_group_by {
 
                 let first = unsafe { &*self.ptr };
 
-                let len = self.remaining_len();
+                let len = self.remainder_len();
                 let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
 
                 let predicate = |probe: &T| if (self.predicate)(first, probe) { Less } else { Greater };
@@ -44,7 +44,7 @@ macro_rules! binary_group_by {
             fn size_hint(&self) -> (usize, Option<usize>) {
                 if self.is_empty() { return (0, Some(0)) }
 
-                let len = self.remaining_len();
+                let len = self.remainder_len();
                 (1, Some(len))
             }
         }
@@ -77,7 +77,7 @@ where P: FnMut(&T, &T) -> bool,
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn remainder(&self) -> &[T] {
-        let len = self.remaining_len();
+        let len = self.remainder_len();
         unsafe { from_raw_parts(self.ptr, len) }
     }
 }
@@ -106,7 +106,7 @@ where P: FnMut(&T, &T) -> bool,
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn into_remainder(self) -> &'a mut [T] {
-        let len = self.remaining_len();
+        let len = self.remainder_len();
         unsafe { from_raw_parts_mut(self.ptr, len) }
     }
 }

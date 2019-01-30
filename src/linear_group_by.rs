@@ -13,7 +13,7 @@ macro_rules! group_by {
             }
 
             #[inline]
-            fn remaining_len(&self) -> usize {
+            fn remainder_len(&self) -> usize {
                 unsafe { offset_from(self.end, self.ptr) }
             }
         }
@@ -53,7 +53,7 @@ macro_rules! group_by {
                     }
                 }
 
-                // `i` is either `0` or the `slice' length - 1` because either:
+                // `i` is either `0` or the `slice length - 1` because either:
                 //  - we have not entered the loop and so `i` is equal to `0`
                 //    the slice length is necessarily `1` because we ensure it is not empty
                 //  - we have entered the loop and we have not early returned
@@ -66,7 +66,7 @@ macro_rules! group_by {
             fn size_hint(&self) -> (usize, Option<usize>) {
                 if self.is_empty() { return (0, Some(0)) }
 
-                let len = self.remaining_len();
+                let len = self.remainder_len();
                 (1, Some(len))
             }
 
@@ -153,7 +153,7 @@ where P: FnMut(&T, &T) -> bool,
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn remainder(&self) -> &[T] {
-        let len = self.remaining_len();
+        let len = self.remainder_len();
         unsafe { from_raw_parts(self.ptr, len) }
     }
 }
@@ -190,7 +190,7 @@ where P: FnMut(&T, &T) -> bool,
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn into_remainder(self) -> &'a mut [T] {
-        let len = self.remaining_len();
+        let len = self.remainder_len();
         unsafe { from_raw_parts_mut(self.ptr, len) }
     }
 }
