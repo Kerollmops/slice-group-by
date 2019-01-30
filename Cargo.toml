@@ -1,8 +1,14 @@
 [package]
 edition = "2018"
-name = "group-by"
+name = "slice-group-by"
+description = "Iterators over groups in a slice"
 version = "0.1.0"
+documentation = "https://docs.rs/slice-group-by"
+repository = "https://github.com/Kerollmops/slice-group-by"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
+license = "MIT"
+keywords = ["slice", "group"]
+categories = ["algorithms"]
 
 [dependencies]
 sdset = "0.3"
