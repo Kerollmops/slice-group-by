@@ -24,19 +24,20 @@ macro_rules! group_by {
             type Item = $elem;
 
             fn next(&mut self) -> Option<Self::Item> {
+                if self.is_empty() { return None }
+
+                let mut i = 0;
+                let mut ptr = self.ptr;
+
                 // we use an unsafe block to avoid bounds checking here.
                 // this is safe because the only thing we do here is to get
                 // two elements at `ptr` and `ptr + 1`, bounds checking is done by hand.
+
+                // we need to get *two* contiguous elements so we check that:
+                //  - the first element is at the `end - 1` position because
+                //  - the second one will be read from `ptr + 1` that must
+                //    be lower or equal to `end`
                 unsafe {
-                    if self.is_empty() { return None }
-
-                    let mut i = 0;
-                    let mut ptr = self.ptr;
-
-                    // we need to get *two* contiguous elements so we check that:
-                    //  - the first element is at the `end - 1` position because
-                    //  - the second one will be read from `ptr + 1` that must
-                    //    be lower or equal to `end`
                     while ptr != self.end.sub(1) {
                         let a = &*ptr;
                         ptr = ptr.add(1);
@@ -50,16 +51,16 @@ macro_rules! group_by {
                             return Some(slice)
                         }
                     }
-
-                    // `i` is either `0` or the slice `length - 1` because either:
-                    //  - we have not entered the loop and so `i` is equal to `0`
-                    //    the slice length is necessarily `1` because we ensure it is not empty
-                    //  - we have entered the loop and we have not early returned
-                    //    so `i` is equal to the slice `length - 1`
-                    let slice = $mkslice(self.ptr, i + 1);
-                    self.ptr = self.end;
-                    Some(slice)
                 }
+
+                // `i` is either `0` or the `slice' length - 1` because either:
+                //  - we have not entered the loop and so `i` is equal to `0`
+                //    the slice length is necessarily `1` because we ensure it is not empty
+                //  - we have entered the loop and we have not early returned
+                //    so `i` is equal to the slice `length - 1`
+                let slice = unsafe { $mkslice(self.ptr, i + 1) };
+                self.ptr = self.end;
+                Some(slice)
             }
 
             fn size_hint(&self) -> (usize, Option<usize>) {
@@ -79,10 +80,11 @@ macro_rules! group_by {
         {
             fn next_back(&mut self) -> Option<Self::Item> {
                 // during the loop we retrieve two elements at `ptr` and `ptr - 1`.
-                unsafe {
-                    if self.is_empty() { return None }
+                if self.is_empty() { return None }
 
-                    let mut i = 0;
+                let mut i = 0;
+
+                unsafe {
                     // we ensure that the first element that will be read
                     // is not under `end` because `end` is out of bound.
                     let mut ptr = self.end.sub(1);
@@ -108,11 +110,11 @@ macro_rules! group_by {
 
                         ptr = ptr.sub(1);
                     }
-
-                    let slice = $mkslice(self.ptr, i + 1);
-                    self.ptr = self.end;
-                    Some(slice)
                 }
+
+                let slice = unsafe { $mkslice(self.ptr, i + 1) };
+                self.ptr = self.end;
+                Some(slice)
             }
         }
 
