@@ -32,7 +32,7 @@ macro_rules! binary_group_by {
                 let len = self.remainder_len();
                 let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
 
-                let predicate = |probe: &T| if (self.predicate)(first, probe) { Less } else { Greater };
+                let predicate = |x: &T| if (self.predicate)(first, x) { Less } else { Greater };
                 let index = tail.binary_search_by(predicate).unwrap_err();
 
                 let left = unsafe { $mkslice(self.ptr, index + 1) };
@@ -55,6 +55,11 @@ macro_rules! binary_group_by {
     }
 }
 
+/// An iterator that will return non-overlapping groups in the slice using *binary search*.
+///
+/// It will not necessarily gives contiguous elements to
+/// the predicate function. The predicate function should implement an order consistent
+/// with the sort order of the slice.
 pub struct BinaryGroupBy<'a, T, P> {
     ptr: *const T,
     end: *const T,
@@ -62,7 +67,7 @@ pub struct BinaryGroupBy<'a, T, P> {
     _phantom: marker::PhantomData<&'a T>,
 }
 
-impl<'a, T, P> BinaryGroupBy<'a, T, P>
+impl<'a, T: 'a, P> BinaryGroupBy<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a [T], predicate: P) -> Self {
@@ -75,7 +80,7 @@ where P: FnMut(&T, &T) -> bool,
     }
 }
 
-impl<'a, T, P> BinaryGroupBy<'a, T, P> {
+impl<'a, T: 'a, P> BinaryGroupBy<'a, T, P> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn remainder(&self) -> &[T] {
@@ -94,6 +99,11 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupBy<'a, T, P> {
 
 binary_group_by!{ struct BinaryGroupBy, &'a [T], from_raw_parts }
 
+/// An iterator that will return non-overlapping mutable groups in the slice using *binary search*.
+///
+/// It will not necessarily gives contiguous elements to
+/// the predicate function. The predicate function should implement an order consistent
+/// with the sort order of the slice.
 pub struct BinaryGroupByMut<'a, T, P> {
     ptr: *mut T,
     end: *mut T,
@@ -101,7 +111,7 @@ pub struct BinaryGroupByMut<'a, T, P> {
     _phantom: marker::PhantomData<&'a T>,
 }
 
-impl<'a, T, P> BinaryGroupByMut<'a, T, P>
+impl<'a, T: 'a, P> BinaryGroupByMut<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a mut [T], predicate: P) -> Self {
@@ -114,7 +124,7 @@ where P: FnMut(&T, &T) -> bool,
     }
 }
 
-impl<'a, T, P> BinaryGroupByMut<'a, T, P> {
+impl<'a, T: 'a, P> BinaryGroupByMut<'a, T, P> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn into_remainder(self) -> &'a mut [T] {

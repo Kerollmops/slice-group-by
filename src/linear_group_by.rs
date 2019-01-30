@@ -124,12 +124,11 @@ macro_rules! group_by {
     }
 }
 
-/// An iterator over slice in (non-overlapping) chunks separated by a predicate.
+/// An iterator that will return non-overlapping groups in the slice
+/// using *linear/sequential search*.
 ///
-/// This struct is created by the [`group_by`] method on [slices].
-///
-/// [`group_by`]: ../../std/primitive.slice.html#method.group_by
-/// [slices]: ../../std/primitive.slice.html
+/// It will gives two contiguous elements to the predicate function therefore the slice
+/// must not be necessarily sorted.
 pub struct LinearGroupBy<'a, T: 'a, P> {
     ptr: *const T,
     end: *const T,
@@ -169,13 +168,12 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupBy<'a, T, P> {
 
 group_by!{ struct LinearGroupBy, &'a [T], from_raw_parts }
 
-/// An iterator over slice in (non-overlapping) mutable chunks separated
-/// by a predicate.
+
+/// An iterator that will return non-overlapping groups in the slice
+/// using *linear/sequential search*.
 ///
-/// This struct is created by the [`group_by_mut`] method on [slices].
-///
-/// [`group_by_mut`]: ../../std/primitive.slice.html#method.group_by_mut
-/// [slices]: ../../std/primitive.slice.html
+/// It will gives two contiguous elements to the predicate function therefore the slice
+/// must not be necessarily sorted.
 pub struct LinearGroupByMut<'a, T: 'a, P> {
     ptr: *mut T,
     end: *mut T,

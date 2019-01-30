@@ -34,7 +34,7 @@ macro_rules! exponential_group_by {
                 let len = self.remainder_len();
                 let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
 
-                let predicate = |probe: &T| if (self.predicate)(first, probe) { Less } else { Greater };
+                let predicate = |x: &T| if (self.predicate)(first, x) { Less } else { Greater };
                 let index = exponential_search_by(tail, predicate).unwrap_err();
 
                 let left = unsafe { $mkslice(self.ptr, index + 1) };
@@ -57,6 +57,11 @@ macro_rules! exponential_group_by {
     }
 }
 
+/// An iterator that will reutrn non-overlapping groups in the slice using *exponential search*.
+///
+/// It will not necessarily gives contiguous elements to
+/// the predicate function. The predicate function should implement an order consistent
+/// with the sort order of the slice.
 pub struct ExponentialGroupBy<'a, T, P> {
     ptr: *const T,
     end: *const T,
@@ -64,7 +69,7 @@ pub struct ExponentialGroupBy<'a, T, P> {
     _phantom: marker::PhantomData<&'a T>,
 }
 
-impl<'a, T, P> ExponentialGroupBy<'a, T, P>
+impl<'a, T: 'a, P> ExponentialGroupBy<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a [T], predicate: P) -> Self {
@@ -77,7 +82,7 @@ where P: FnMut(&T, &T) -> bool,
     }
 }
 
-impl<'a, T, P> ExponentialGroupBy<'a, T, P> {
+impl<'a, T: 'a, P> ExponentialGroupBy<'a, T, P> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn remainder(&self) -> &[T] {
@@ -96,6 +101,11 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupBy<'a, T, P> {
 
 exponential_group_by!{ struct ExponentialGroupBy, &'a [T], from_raw_parts }
 
+/// An iterator that will reutrn non-overlapping mutable groups in the slice using *exponential search*.
+///
+/// It will not necessarily gives contiguous elements to
+/// the predicate function. The predicate function should implement an order consistent
+/// with the sort order of the slice.
 pub struct ExponentialGroupByMut<'a, T, P> {
     ptr: *mut T,
     end: *mut T,
@@ -103,7 +113,7 @@ pub struct ExponentialGroupByMut<'a, T, P> {
     _phantom: marker::PhantomData<&'a T>,
 }
 
-impl<'a, T, P> ExponentialGroupByMut<'a, T, P>
+impl<'a, T: 'a, P> ExponentialGroupByMut<'a, T, P>
 where P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a mut [T], predicate: P) -> Self {
@@ -116,7 +126,7 @@ where P: FnMut(&T, &T) -> bool,
     }
 }
 
-impl<'a, T, P> ExponentialGroupByMut<'a, T, P> {
+impl<'a, T: 'a, P> ExponentialGroupByMut<'a, T, P> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn into_remainder(self) -> &'a mut [T] {
