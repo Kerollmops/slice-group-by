@@ -1,7 +1,7 @@
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::cmp::Ordering::{Less, Greater};
 use std::iter::FusedIterator;
-use std::marker;
+use std::{fmt, marker};
 
 use sdset::exponential_search_by;
 
@@ -86,6 +86,14 @@ impl<'a, T, P> ExponentialGroupBy<'a, T, P> {
     }
 }
 
+impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupBy<'a, T, P> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ExponentialGroupBy")
+            .field("remainder", &self.remainder())
+            .finish()
+    }
+}
+
 exponential_group_by!{ struct ExponentialGroupBy, &'a [T], from_raw_parts }
 
 pub struct ExponentialGroupByMut<'a, T, P> {
@@ -114,6 +122,17 @@ impl<'a, T, P> ExponentialGroupByMut<'a, T, P> {
     pub fn into_remainder(self) -> &'a mut [T] {
         let len = self.remainder_len();
         unsafe { from_raw_parts_mut(self.ptr, len) }
+    }
+}
+
+impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupByMut<'a, T, P> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let len = self.remainder_len();
+        let remainder = unsafe { from_raw_parts(self.ptr, len) };
+
+        f.debug_struct("ExponentialGroupByMut")
+            .field("remaining", &remainder)
+            .finish()
     }
 }
 

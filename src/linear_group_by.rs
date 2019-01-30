@@ -1,6 +1,6 @@
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::iter::FusedIterator;
-use std::marker;
+use std::{fmt, marker};
 
 use crate::offset_from;
 
@@ -130,7 +130,6 @@ macro_rules! group_by {
 ///
 /// [`group_by`]: ../../std/primitive.slice.html#method.group_by
 /// [slices]: ../../std/primitive.slice.html
-#[derive(Debug)] // FIXME implement Debug to be more user friendly
 pub struct LinearGroupBy<'a, T: 'a, P> {
     ptr: *const T,
     end: *const T,
@@ -160,6 +159,14 @@ impl<'a, T: 'a, P> LinearGroupBy<'a, T, P> {
     }
 }
 
+impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupBy<'a, T, P> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("LinearGroupBy")
+            .field("remainder", &self.remainder())
+            .finish()
+    }
+}
+
 group_by!{ struct LinearGroupBy, &'a [T], from_raw_parts }
 
 /// An iterator over slice in (non-overlapping) mutable chunks separated
@@ -169,7 +176,6 @@ group_by!{ struct LinearGroupBy, &'a [T], from_raw_parts }
 ///
 /// [`group_by_mut`]: ../../std/primitive.slice.html#method.group_by_mut
 /// [slices]: ../../std/primitive.slice.html
-#[derive(Debug)] // FIXME implement Debug to be more user friendly
 pub struct LinearGroupByMut<'a, T: 'a, P> {
     ptr: *mut T,
     end: *mut T,
@@ -199,8 +205,18 @@ impl<'a, T: 'a, P> LinearGroupByMut<'a, T, P> {
     }
 }
 
-group_by!{ struct LinearGroupByMut, &'a mut [T], from_raw_parts_mut }
+impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupByMut<'a, T, P> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let len = self.remainder_len();
+        let remainder = unsafe { from_raw_parts(self.ptr, len) };
 
+        f.debug_struct("LinearGroupByMut")
+            .field("remainder", &remainder)
+            .finish()
+    }
+}
+
+group_by!{ struct LinearGroupByMut, &'a mut [T], from_raw_parts_mut }
 
 #[cfg(test)]
 mod tests {
