@@ -4,6 +4,19 @@ An implementation of the `group_by` Haskell function for slices only.
 
 It provides tools for efficiently iterating over a slice by groups defined by a function that specifies if two elements are in the same group.
 
+### Differences with `Itertools::group_by`
+
+The [`Itertools::group_by`] method use a key to compare elements, this library works like, say, [`slice::sort_by`], it uses a comparison function. It works on every `Iterator` type, `slice-group-by` work only with mutable and immutable slices, which is the power of this library, it is fast thanks to [data locality].
+
+Also `slice-group-by` support multiple search algorithms (i.e. [linear], [binary] and [exponential search]) and can return groups starting from the end.
+
+[`Itertools::group_by`]: https://docs.rs/itertools/0.8.0/itertools/trait.Itertools.html#method.group_by
+[`slice::sort_by`]: https://doc.rust-lang.org/std/primitive.slice.html#method.sort_by
+[data locality]: https://en.wikipedia.org/wiki/Locality_of_reference
+[linear]: https://en.wikipedia.org/wiki/Linear_search
+[binary]: https://en.wikipedia.org/wiki/Binary_search_algorithm
+[exponential search]: https://en.wikipedia.org/wiki/Exponential_search
+
 ## Examples
 
 ### Linear Searched Immutable Groups
