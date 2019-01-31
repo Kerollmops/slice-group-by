@@ -1,9 +1,9 @@
-//! Crate `group-by` is a library for efficiently iterating on a slice by groups defined by
-//! a function that specify if two elements are in the same group.
+//! Crate `slice-group-by` is a library for efficiently iterating on a slice by groups defined by
+//! a function that specifies if two elements are in the same group.
 //!
 //! # Example: Linear Searched Immutable Groups
 //!
-//! You can use a function return `true` if two elements are in the same group.
+//! You will only need to define a function that returns `true` if two elements are in the same group.
 //!
 //! The `LinearGroupBy` iterator will always gives contiguous elements to the predicate function.
 //!
@@ -38,6 +38,23 @@
 //! assert_eq!(iter.next(), Some(&mut [1, 1, 1][..]));
 //! assert_eq!(iter.next(), Some(&mut [2, 2, 2][..]));
 //! assert_eq!(iter.next(), Some(&mut [3, 3][..]));
+//! assert_eq!(iter.next(), None);
+//! ```
+//!
+//! # Example: Exponential Searched Mutable Groups starting from the End
+//!
+//! It is also possible to get mutable non overlapping groups of a slice even starting from the end of the slice.
+//!
+//! ```rust
+//! use slice_group_by::GroupByMut;
+//!
+//! let slice = &mut [1, 1, 1, 2, 2, 2, 3, 3];
+//!
+//! let mut iter = slice.exponential_group_by_mut(|a, b| a == b).rev();
+//!
+//! assert_eq!(iter.next(), Some(&mut [3, 3][..]));
+//! assert_eq!(iter.next(), Some(&mut [2, 2, 2][..]));
+//! assert_eq!(iter.next(), Some(&mut [1, 1, 1][..]));
 //! assert_eq!(iter.next(), None);
 //! ```
 //!
