@@ -85,74 +85,74 @@ unsafe fn offset_from<T>(to: *const T, from: *const T) -> usize {
 
 /// A convenient trait to construct an iterator returning non-overlapping groups
 /// defined by a predicate.
-pub trait GroupBy<'a, T, P>
+pub trait GroupBy<T, P>
 where P: FnMut(&T, &T) -> bool
 {
     /// Returns an iterator on slice groups using the *linear search* method.
-    fn linear_group_by(self, predicate: P) -> LinearGroupBy<'a, T, P>;
+    fn linear_group_by(&self, predicate: P) -> LinearGroupBy<T, P>;
 
     /// Returns an iterator on slice groups using the *binary search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn binary_group_by(self, predicate: P) -> BinaryGroupBy<'a, T, P>;
+    fn binary_group_by(&self, predicate: P) -> BinaryGroupBy<T, P>;
 
     /// Returns an iterator on slice groups using the *exponential search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn exponential_group_by(self, predicate: P) -> ExponentialGroupBy<'a, T, P>;
+    fn exponential_group_by(&self, predicate: P) -> ExponentialGroupBy<T, P>;
 }
 
 /// A convenient trait to construct an iterator returning non-overlapping mutable
 /// groups defined by a predicate.
-pub trait GroupByMut<'a, T: 'a, P>
+pub trait GroupByMut<T, P>
 where P: FnMut(&T, &T) -> bool
 {
     /// Returns an iterator on slice groups using the *linear search* method.
-    fn linear_group_by_mut(self, predicate: P) -> LinearGroupByMut<'a, T, P>;
+    fn linear_group_by_mut(&mut self, predicate: P) -> LinearGroupByMut<T, P>;
 
     /// Returns an iterator on slice groups using the *binary search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn binary_group_by_mut(self, predicate: P) -> BinaryGroupByMut<'a, T, P>;
+    fn binary_group_by_mut(&mut self, predicate: P) -> BinaryGroupByMut<T, P>;
 
     /// Returns an iterator on slice groups using the *exponential search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn exponential_group_by_mut(self, predicate: P) -> ExponentialGroupByMut<'a, T, P>;
+    fn exponential_group_by_mut(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>;
 }
 
-impl<'a, T, P> GroupBy<'a, T, P> for &'a [T]
+impl<T, P> GroupBy<T, P> for [T]
 where P: FnMut(&T, &T) -> bool
 {
-    fn linear_group_by(self, predicate: P) -> LinearGroupBy<'a, T, P> {
+    fn linear_group_by(&self, predicate: P) -> LinearGroupBy<T, P> {
         LinearGroupBy::new(self, predicate)
     }
 
-    fn binary_group_by(self, predicate: P) -> BinaryGroupBy<'a, T, P> {
+    fn binary_group_by(&self, predicate: P) -> BinaryGroupBy<T, P> {
         BinaryGroupBy::new(self, predicate)
     }
 
-    fn exponential_group_by(self, predicate: P) -> ExponentialGroupBy<'a, T, P> {
+    fn exponential_group_by(&self, predicate: P) -> ExponentialGroupBy<T, P> {
         ExponentialGroupBy::new(self, predicate)
     }
 }
 
-impl<'a, T: 'a, P> GroupByMut<'a, T, P> for &'a mut [T]
+impl<T, P> GroupByMut<T, P> for [T]
 where P: FnMut(&T, &T) -> bool
 {
-    fn linear_group_by_mut(self, predicate: P) -> LinearGroupByMut<'a, T, P> {
+    fn linear_group_by_mut(&mut self, predicate: P) -> LinearGroupByMut<T, P> {
         LinearGroupByMut::new(self, predicate)
     }
 
-    fn binary_group_by_mut(self, predicate: P) -> BinaryGroupByMut<'a, T, P> {
+    fn binary_group_by_mut(&mut self, predicate: P) -> BinaryGroupByMut<T, P> {
         BinaryGroupByMut::new(self, predicate)
     }
 
-    fn exponential_group_by_mut(self, predicate: P) -> ExponentialGroupByMut<'a, T, P> {
+    fn exponential_group_by_mut(&mut self, predicate: P) -> ExponentialGroupByMut<T, P> {
         ExponentialGroupByMut::new(self, predicate)
     }
 }
