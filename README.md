@@ -10,7 +10,7 @@ It provides tools for efficiently iterating over a slice by groups defined by a 
 
 You will only need to define a function that returns `true` if two elements are in the same group.
 
-The `LinearGroupBy` iterator will always gives contiguous elements to the predicate tion.
+The `LinearGroupBy` iterator will always gives contiguous elements to the predicate function.
 
 ```rust
 use slice_group_by::GroupBy;
@@ -30,7 +30,7 @@ assert_eq!(iter.next(), None);
 It is also possible to get mutable non overlapping groups of a slice.
 
 The `BinaryGroupBy/Mut` and `ExponentialGroupBy/Mut` iterators will not necessarily
-gives contiguous elements to the predicate function. The predicate function should ement
+gives contiguous elements to the predicate function. The predicate function should implement
 an order consistent with the sort order of the slice.
 
 ```rust
@@ -48,7 +48,7 @@ assert_eq!(iter.next(), None);
 
 ### Exponential Searched Mutable Groups starting from the End
 
-It is also possible to get mutable non overlapping groups of a slice even starting from end of the slice.
+It is also possible to get mutable non overlapping groups of a slice even starting from end of it.
 
 ```rust
 use slice_group_by::GroupByMut;

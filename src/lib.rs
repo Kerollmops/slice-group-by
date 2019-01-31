@@ -43,7 +43,7 @@
 //!
 //! # Example: Exponential Searched Mutable Groups starting from the End
 //!
-//! It is also possible to get mutable non overlapping groups of a slice even starting from the end of the slice.
+//! It is also possible to get mutable non overlapping groups of a slice even starting from the end of it.
 //!
 //! ```rust
 //! use slice_group_by::GroupByMut;
