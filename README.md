@@ -2,11 +2,11 @@
 
 An implementation of the `group_by` Haskell function for slices only.
 
-# Introduction
+It provides tools for efficiently iterating over a slice by groups defined by a function that specifies if two elements are in the same group.
 
-Crate `slice-group-by` is a library for efficiently iterating over a slice by groups defined by a function that specifies if two elements are in the same group.
+## Examples
 
-## Example: Linear Searched Immutable Groups
+### Linear Searched Immutable Groups
 
 You will only need to define a function that returns `true` if two elements are in the same group.
 
@@ -25,7 +25,7 @@ assert_eq!(iter.next(), Some(&[2, 2, 2][..]));
 assert_eq!(iter.next(), None);
 ```
 
-## Example: Binary Searched Mutable Groups
+### Binary Searched Mutable Groups
 
 It is also possible to get mutable non overlapping groups of a slice.
 
@@ -46,7 +46,7 @@ assert_eq!(iter.next(), Some(&mut [3, 3][..]));
 assert_eq!(iter.next(), None);
 ```
 
-## Example: Exponential Searched Mutable Groups starting from the End
+### Exponential Searched Mutable Groups starting from the End
 
 It is also possible to get mutable non overlapping groups of a slice even starting from end of the slice.
 
