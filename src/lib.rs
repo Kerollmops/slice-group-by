@@ -62,9 +62,15 @@
 #![cfg_attr(feature = "nightly", feature(ptr_offset_from))]
 #![cfg_attr(feature = "nightly", feature(test))]
 
+#![cfg_attr(all(not(test), not(feature = "std")), no_std)]
+#[cfg(all(not(test), not(feature = "std")))]
+extern crate core as std;
+
 mod linear_group_by;
 mod binary_group_by;
 mod exponential_group_by;
+
+use std::cmp::{self, Ordering};
 
 pub use self::linear_group_by::{LinearGroupBy, LinearGroupByMut};
 pub use self::binary_group_by::{BinaryGroupBy, BinaryGroupByMut};
@@ -81,6 +87,120 @@ unsafe fn offset_from<T>(to: *const T, from: *const T) -> usize {
 unsafe fn offset_from<T>(to: *const T, from: *const T) -> usize {
     use std::mem;
     (to as usize - from as usize) / mem::size_of::<T>()
+}
+
+/// Exponential searches this sorted slice for a given element.
+///
+/// If the value is found then `Ok` is returned, containing the index of the matching element;
+/// if the value is not found then `Err` is returned, containing the index where a matching element
+/// could be inserted while maintaining sorted order.
+///
+/// # Examples
+///
+/// Looks up a series of four elements. The first is found, with a
+/// uniquely determined position; the second and third are not
+/// found; the fourth could match any position in `[1, 4]`.
+///
+/// ```
+/// use slice_group_by::exponential_search;
+///
+/// let s = &[0, 1, 1, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
+///
+/// assert_eq!(exponential_search(s, &13),  Ok(9));
+/// assert_eq!(exponential_search(s, &4),   Err(7));
+/// assert_eq!(exponential_search(s, &100), Err(13));
+/// let r = exponential_search(s, &1);
+/// assert!(match r { Ok(1..=4) => true, _ => false, });
+/// ```
+#[inline]
+pub fn exponential_search<T>(slice: &[T], elem: &T) -> Result<usize, usize>
+where T: Ord
+{
+    exponential_search_by(slice, |x| x.cmp(elem))
+}
+
+/// Binary searches this sorted slice with a comparator function.
+///
+/// The comparator function should implement an order consistent with the sort order of
+/// the underlying slice, returning an order code that indicates whether its argument
+/// is `Less`, `Equal` or `Greater` the desired target.
+///
+/// If the value is found then `Ok` is returned, containing the index of the matching element;
+/// if the value is not found then `Err` is returned, containing the index where a matching element
+/// could be inserted while maintaining sorted order.
+///
+/// # Examples
+///
+/// Looks up a series of four elements. The first is found, with a
+/// uniquely determined position; the second and third are not
+/// found; the fourth could match any position in `[1, 4]`.
+///
+/// ```
+/// use slice_group_by::exponential_search_by;
+///
+/// let s = &[0, 1, 1, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
+///
+/// let seek = 13;
+/// assert_eq!(exponential_search_by(s, |probe| probe.cmp(&seek)), Ok(9));
+/// let seek = 4;
+/// assert_eq!(exponential_search_by(s, |probe| probe.cmp(&seek)), Err(7));
+/// let seek = 100;
+/// assert_eq!(exponential_search_by(s, |probe| probe.cmp(&seek)), Err(13));
+/// let seek = 1;
+/// let r = exponential_search_by(s, |probe| probe.cmp(&seek));
+/// assert!(match r { Ok(1..=4) => true, _ => false, });
+/// ```
+#[inline]
+pub fn exponential_search_by<T, F>(slice: &[T], mut f: F) -> Result<usize, usize>
+where F: FnMut(&T) -> Ordering,
+{
+    let mut index = 1;
+    while index < slice.len() && f(&slice[index]) == Ordering::Less {
+        index *= 2;
+    }
+
+    let half_bound = index / 2;
+    let bound = cmp::min(index + 1, slice.len());
+
+    match slice[half_bound..bound].binary_search_by(f) {
+        Ok(pos) => Ok(half_bound + pos),
+        Err(pos) => Err(half_bound + pos),
+    }
+}
+
+/// Binary searches this sorted slice with a key extraction function.
+///
+/// Assumes that the slice is sorted by the key.
+///
+/// If the value is found then `Ok` is returned, containing the index of the matching element;
+/// if the value is not found then `Err` is returned, containing the index where a matching element
+/// could be inserted while maintaining sorted order.
+///
+/// # Examples
+///
+/// Looks up a series of four elements. The first is found, with a
+/// uniquely determined position; the second and third are not
+/// found; the fourth could match any position in `[1, 4]`.
+///
+/// ```
+/// use slice_group_by::exponential_search_by_key;
+///
+/// let s = &[(0, 0), (2, 1), (4, 1), (5, 1), (3, 1),
+///           (1, 2), (2, 3), (4, 5), (5, 8), (3, 13),
+///           (1, 21), (2, 34), (4, 55)];
+///
+/// assert_eq!(exponential_search_by_key(s, &13, |&(a,b)| b),  Ok(9));
+/// assert_eq!(exponential_search_by_key(s, &4, |&(a,b)| b),   Err(7));
+/// assert_eq!(exponential_search_by_key(s, &100, |&(a,b)| b), Err(13));
+/// let r = exponential_search_by_key(s, &1, |&(a,b)| b);
+/// assert!(match r { Ok(1..=4) => true, _ => false, });
+/// ```
+#[inline]
+pub fn exponential_search_by_key<T, B, F>(slice: &[T], b: &B, mut f: F) -> Result<usize, usize>
+where F: FnMut(&T) -> B,
+      B: Ord
+{
+    exponential_search_by(slice, |k| f(k).cmp(b))
 }
 
 /// A convenient trait to construct an iterator returning non-overlapping groups

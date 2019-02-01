@@ -10,11 +10,10 @@ license = "MIT"
 keywords = ["slice", "group"]
 categories = ["algorithms"]
 
-[dependencies]
-sdset = "0.3"
-
 [dev-dependencies]
 rand = "0.5"
 
 [features]
+default = ["std"]
 nightly = []
+std = []

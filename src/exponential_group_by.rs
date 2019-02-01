@@ -3,9 +3,7 @@ use std::cmp::Ordering::{Less, Greater};
 use std::iter::FusedIterator;
 use std::{fmt, marker};
 
-use sdset::exponential_search_by;
-
-use crate::offset_from;
+use crate::{exponential_search_by, offset_from};
 
 macro_rules! exponential_group_by {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
