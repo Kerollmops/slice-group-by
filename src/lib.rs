@@ -66,15 +66,76 @@
 #[cfg(all(not(test), not(feature = "std")))]
 extern crate core as std;
 
+macro_rules! binary_group {
+    (struct $name:ident, $elem:ty) => {
+        impl<'a, T: 'a> $name<'a, T> {
+            #[inline]
+            pub fn is_empty(&self) -> bool {
+                self.0.is_empty()
+            }
+
+            #[inline]
+            pub fn remainder_len(&self) -> usize {
+                self.0.remainder_len()
+            }
+        }
+
+        impl<'a, T: 'a> Iterator for $name<'a, T>
+        where T: PartialEq,
+        {
+            type Item = $elem;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                self.0.next()
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.0.size_hint()
+            }
+
+            fn last(mut self) -> Option<Self::Item> {
+                self.0.next_back()
+            }
+        }
+
+        impl<'a, T: 'a> DoubleEndedIterator for $name<'a, T>
+        where T: PartialEq,
+        {
+            fn next_back(&mut self) -> Option<Self::Item> {
+                self.0.next_back()
+            }
+        }
+
+        impl<'a, T: 'a> FusedIterator for $name<'a, T>
+        where T: PartialEq,
+        { }
+    }
+}
+
 mod linear_group_by;
 mod binary_group_by;
 mod exponential_group_by;
 
 use std::cmp::{self, Ordering};
 
-pub use self::linear_group_by::{LinearGroupBy, LinearGroupByMut};
-pub use self::binary_group_by::{BinaryGroupBy, BinaryGroupByMut};
-pub use self::exponential_group_by::{ExponentialGroupBy, ExponentialGroupByMut};
+pub use self::linear_group_by::{
+    LinearGroupBy,
+    LinearGroup,
+    LinearGroupByMut,
+    LinearGroupMut,
+};
+pub use self::binary_group_by::{
+    BinaryGroupBy,
+    BinaryGroup,
+    BinaryGroupByMut,
+    BinaryGroupMut,
+};
+pub use self::exponential_group_by::{
+    ExponentialGroupBy,
+    ExponentialGroup,
+    ExponentialGroupByMut,
+    ExponentialGroupMut,
+};
 
 #[cfg(feature = "nightly")]
 #[inline]

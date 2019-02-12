@@ -167,6 +167,30 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupByMut<'a, T, P> {
 
 exponential_group_by!{ struct ExponentialGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+pub struct ExponentialGroup<'a, T: 'a>(ExponentialGroupBy<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> ExponentialGroup<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a [T]) -> ExponentialGroup<'a, T> {
+        ExponentialGroup(ExponentialGroupBy::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct ExponentialGroup, &'a [T] }
+
+pub struct ExponentialGroupMut<'a, T: 'a>(ExponentialGroupByMut<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> ExponentialGroupMut<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a mut [T]) -> ExponentialGroupMut<'a, T> {
+        ExponentialGroupMut(ExponentialGroupByMut::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct ExponentialGroupMut, &'a mut [T] }
+
 #[cfg(test)]
 mod tests {
     use super::*;

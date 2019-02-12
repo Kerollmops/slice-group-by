@@ -216,6 +216,30 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupByMut<'a, T, P> {
 
 group_by!{ struct LinearGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+pub struct LinearGroup<'a, T: 'a>(LinearGroupBy<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> LinearGroup<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a [T]) -> LinearGroup<'a, T> {
+        LinearGroup(LinearGroupBy::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct LinearGroup, &'a [T] }
+
+pub struct LinearGroupMut<'a, T: 'a>(LinearGroupByMut<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> LinearGroupMut<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a mut [T]) -> LinearGroupMut<'a, T> {
+        LinearGroupMut(LinearGroupByMut::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct LinearGroupMut, &'a mut [T] }
+
 #[cfg(test)]
 mod tests {
     use super::*;

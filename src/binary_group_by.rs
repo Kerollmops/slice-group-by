@@ -167,6 +167,30 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupByMut<'a, T, P> {
 
 binary_group_by!{ struct BinaryGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+pub struct BinaryGroup<'a, T: 'a>(BinaryGroupBy<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> BinaryGroup<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a [T]) -> BinaryGroup<'a, T> {
+        BinaryGroup(BinaryGroupBy::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct BinaryGroup, &'a [T] }
+
+pub struct BinaryGroupMut<'a, T: 'a>(BinaryGroupByMut<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> BinaryGroupMut<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a mut [T]) -> BinaryGroupMut<'a, T> {
+        BinaryGroupMut(BinaryGroupByMut::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct BinaryGroupMut, &'a mut [T] }
+
 #[cfg(test)]
 mod tests {
     use super::*;
