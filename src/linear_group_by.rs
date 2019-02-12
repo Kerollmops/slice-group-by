@@ -8,12 +8,12 @@ macro_rules! group_by {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
         impl<'a, T: 'a, P> $name<'a, T, P> {
             #[inline]
-            fn is_empty(&self) -> bool {
+            pub fn is_empty(&self) -> bool {
                 self.ptr == self.end
             }
 
             #[inline]
-            fn remainder_len(&self) -> usize {
+            pub fn remainder_len(&self) -> usize {
                 unsafe { offset_from(self.end, self.ptr) }
             }
         }
