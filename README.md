@@ -1,5 +1,10 @@
 # slice-group-by
 
+[![slice-group-by crate](https://img.shields.io/crates/v/slice-group-by.svg)](https://crates.io/crates/slice-group-by)
+[![slice-group-by documentation](https://docs.rs/slice-group-by/badge.svg)](https://docs.rs/slice-group-by)
+[![dependency status](https://deps.rs/repo/github/Kerollmops/slice-group-by/status.svg)](https://deps.rs/repo/github/Kerollmops/slice-group-by)
+[![License](https://img.shields.io/github/license/Kerollmops/slice-group-by.svg)](https://github.com/Kerollmops/slice-group-by)
+
 An implementation of the `group_by` Haskell function for slices only.
 
 It provides tools for efficiently iterating over a slice by groups defined by a function that specifies if two elements are in the same group.
