@@ -167,6 +167,30 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupByMut<'a, T, P> {
 
 binary_group_by!{ struct BinaryGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+pub struct BinaryGroup<'a, T: 'a>(BinaryGroupBy<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> BinaryGroup<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a [T]) -> BinaryGroup<'a, T> {
+        BinaryGroup(BinaryGroupBy::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct BinaryGroup, &'a [T] }
+
+pub struct BinaryGroupMut<'a, T: 'a>(BinaryGroupByMut<'a, T, fn(&T, &T) -> bool>);
+
+impl<'a, T: 'a> BinaryGroupMut<'a, T>
+where T: PartialEq,
+{
+    pub fn new(slice: &'a mut [T]) -> BinaryGroupMut<'a, T> {
+        BinaryGroupMut(BinaryGroupByMut::new(slice, PartialEq::eq))
+    }
+}
+
+binary_group!{ struct BinaryGroupMut, &'a mut [T] }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,7 +214,7 @@ mod tests {
     fn one_big_group() {
         let slice = &[1, 1, 1, 1];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1, 1][..]));
         assert_eq!(iter.next(), None);
@@ -200,7 +224,7 @@ mod tests {
     fn two_equal_groups() {
         let slice = &[1, 1, 1, 1, 2, 2, 2, 2];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1, 1][..]));
         assert_eq!(iter.next(), Some(&[2, 2, 2, 2][..]));
@@ -211,7 +235,7 @@ mod tests {
     fn two_little_equal_groups() {
         let slice = &[1, 2];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), Some(&[2][..]));
@@ -222,7 +246,7 @@ mod tests {
     fn three_groups() {
         let slice = &[1, 1, 1, 2, 2, 2, 3, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
         assert_eq!(iter.next(), Some(&[2, 2, 2][..]));
@@ -234,7 +258,7 @@ mod tests {
     fn three_little_groups() {
         let slice = &[1, 2, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), Some(&[2][..]));
@@ -246,7 +270,7 @@ mod tests {
     fn overflow() {
         let slice = &[Guard::Invalid(0), Guard::Valid(1), Guard::Valid(2), Guard::Invalid(3)];
 
-        let mut iter = BinaryGroupBy::new(&slice[1..3], |a, b| a == b);
+        let mut iter = BinaryGroup::new(&slice[1..3]);
 
         assert_eq!(iter.next(), Some(&[Guard::Valid(1), Guard::Valid(2)][..]));
         assert_eq!(iter.next(), None);
@@ -256,7 +280,7 @@ mod tests {
     fn last_three_little_groups() {
         let slice = &[1, 2, 3];
 
-        let iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.last(), Some(&[3][..]));
     }
@@ -265,7 +289,7 @@ mod tests {
     fn last_three_groups() {
         let slice = &[1, 1, 1, 2, 2, 2, 3, 3];
 
-        let iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.last(), Some(&[3, 3][..]));
     }
@@ -276,7 +300,7 @@ mod tests {
 
         println!("{:?}", (&slice[1..3]).as_ptr());
 
-        let iter = BinaryGroupBy::new(&slice[1..3], |a, b| a == b);
+        let iter = BinaryGroup::new(&slice[1..3]);
 
         assert_eq!(iter.last(), Some(&[Guard::Valid(1), Guard::Valid(2)][..]));
     }
@@ -285,7 +309,7 @@ mod tests {
     fn back_empty_slice() {
         let slice: &[i32] = &[];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next_back(), None);
     }
@@ -294,7 +318,7 @@ mod tests {
     fn back_one_little_group() {
         let slice = &[1];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next_back(), Some(&[1][..]));
         assert_eq!(iter.next_back(), None);
@@ -305,7 +329,7 @@ mod tests {
     fn back_three_little_groups() {
         let slice = &[1, 2, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next_back(), Some(&[3][..]));
         assert_eq!(iter.next_back(), Some(&[2][..]));
@@ -317,7 +341,7 @@ mod tests {
     fn back_three_groups() {
         let slice = &[1, 1, 1, 2, 2, 2, 3, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next_back(), Some(&[3, 3][..]));
         assert_eq!(iter.next_back(), Some(&[2, 2, 2][..]));
@@ -329,7 +353,7 @@ mod tests {
     fn double_ended_dont_cross() {
         let slice = &[1, 1, 1, 2, 2, 2, 3, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
         assert_eq!(iter.next_back(), Some(&[3, 3][..]));
@@ -342,7 +366,7 @@ mod tests {
     fn fused_iterator() {
         let slice = &[1, 2, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next(), Some(&[1][..]));
         assert_eq!(iter.next(), Some(&[2][..]));
@@ -355,7 +379,7 @@ mod tests {
     fn back_fused_iterator() {
         let slice = &[1, 2, 3];
 
-        let mut iter = BinaryGroupBy::new(slice, |a, b| a == b);
+        let mut iter = BinaryGroup::new(slice);
 
         assert_eq!(iter.next_back(), Some(&[3][..]));
         assert_eq!(iter.next_back(), Some(&[2][..]));
@@ -388,7 +412,7 @@ mod bench {
         vec.sort_unstable();
 
         b.iter(|| {
-            let group_by = BinaryGroupBy::new(vec.as_slice(), |a, b| a == b);
+            let group_by = BinaryGroup::new(vec.as_slice());
             test::black_box(group_by.count())
         })
     }
@@ -406,7 +430,7 @@ mod bench {
         vec.sort_unstable();
 
         b.iter(|| {
-            let group_by = BinaryGroupBy::new(vec.as_slice(), |a, b| a == b);
+            let group_by = BinaryGroup::new(vec.as_slice());
             test::black_box(group_by.count())
         })
     }
@@ -416,7 +440,7 @@ mod bench {
         let vec = vec![1; 16_000];
 
         b.iter(|| {
-            let group_by = BinaryGroupBy::new(vec.as_slice(), |a, b| a == b);
+            let group_by = BinaryGroup::new(vec.as_slice());
             test::black_box(group_by.count())
         })
     }
@@ -434,7 +458,7 @@ mod bench {
         vec.sort_unstable();
 
         b.iter(|| {
-            let group_by = BinaryGroupBy::new(vec.as_slice(), |a, b| a == b);
+            let group_by = BinaryGroup::new(vec.as_slice());
             test::black_box(group_by.rev().count())
         })
     }
@@ -444,7 +468,7 @@ mod bench {
         let vec = vec![1; 16_000];
 
         b.iter(|| {
-            let group_by = BinaryGroupBy::new(vec.as_slice(), |a, b| a == b);
+            let group_by = BinaryGroup::new(vec.as_slice());
             test::black_box(group_by.rev().count())
         })
     }

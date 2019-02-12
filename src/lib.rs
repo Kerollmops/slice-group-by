@@ -66,15 +66,76 @@
 #[cfg(all(not(test), not(feature = "std")))]
 extern crate core as std;
 
+macro_rules! binary_group {
+    (struct $name:ident, $elem:ty) => {
+        impl<'a, T: 'a> $name<'a, T> {
+            #[inline]
+            pub fn is_empty(&self) -> bool {
+                self.0.is_empty()
+            }
+
+            #[inline]
+            pub fn remainder_len(&self) -> usize {
+                self.0.remainder_len()
+            }
+        }
+
+        impl<'a, T: 'a> Iterator for $name<'a, T>
+        where T: PartialEq,
+        {
+            type Item = $elem;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                self.0.next()
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.0.size_hint()
+            }
+
+            fn last(mut self) -> Option<Self::Item> {
+                self.0.next_back()
+            }
+        }
+
+        impl<'a, T: 'a> DoubleEndedIterator for $name<'a, T>
+        where T: PartialEq,
+        {
+            fn next_back(&mut self) -> Option<Self::Item> {
+                self.0.next_back()
+            }
+        }
+
+        impl<'a, T: 'a> FusedIterator for $name<'a, T>
+        where T: PartialEq,
+        { }
+    }
+}
+
 mod linear_group_by;
 mod binary_group_by;
 mod exponential_group_by;
 
 use std::cmp::{self, Ordering};
 
-pub use self::linear_group_by::{LinearGroupBy, LinearGroupByMut};
-pub use self::binary_group_by::{BinaryGroupBy, BinaryGroupByMut};
-pub use self::exponential_group_by::{ExponentialGroupBy, ExponentialGroupByMut};
+pub use self::linear_group_by::{
+    LinearGroupBy,
+    LinearGroup,
+    LinearGroupByMut,
+    LinearGroupMut,
+};
+pub use self::binary_group_by::{
+    BinaryGroupBy,
+    BinaryGroup,
+    BinaryGroupByMut,
+    BinaryGroupMut,
+};
+pub use self::exponential_group_by::{
+    ExponentialGroupBy,
+    ExponentialGroup,
+    ExponentialGroupByMut,
+    ExponentialGroupMut,
+};
 
 #[cfg(feature = "nightly")]
 #[inline]
@@ -205,74 +266,177 @@ where F: FnMut(&T) -> B,
 
 /// A convenient trait to construct an iterator returning non-overlapping groups
 /// defined by a predicate.
-pub trait GroupBy<T, P>
-where P: FnMut(&T, &T) -> bool
-{
+pub trait GroupBy<T> {
     /// Returns an iterator on slice groups using the *linear search* method.
-    fn linear_group_by(&self, predicate: P) -> LinearGroupBy<T, P>;
+    fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
+    where P: FnMut(&T, &T) -> bool;
+
+    /// Returns an iterator on slice groups based on the [`Partial::eq`] method of `T`,
+    /// it uses *linear search* to iterate over groups.
+    ///
+    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    fn linear_group(&self) -> LinearGroup<T>
+    where T: PartialEq;
 
     /// Returns an iterator on slice groups using the *binary search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn binary_group_by(&self, predicate: P) -> BinaryGroupBy<T, P>;
+    fn binary_group_by<P>(&self, predicate: P) -> BinaryGroupBy<T, P>
+    where P: FnMut(&T, &T) -> bool;
+
+    /// Returns an iterator on slice groups based on the [`Partial::eq`] method of `T`,
+    /// it uses *binary search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    ///
+    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    fn binary_group(&self) -> BinaryGroup<T>
+    where T: PartialEq;
 
     /// Returns an iterator on slice groups using the *exponential search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn exponential_group_by(&self, predicate: P) -> ExponentialGroupBy<T, P>;
+    fn exponential_group_by<P>(&self, predicate: P) -> ExponentialGroupBy<T, P>
+    where P: FnMut(&T, &T) -> bool;
+
+    /// Returns an iterator on slice groups based on the [`Partial::eq`] method of `T`,
+    /// it uses *exponential search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    ///
+    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    fn exponential_group(&self) -> ExponentialGroup<T>
+    where T: PartialEq;
 }
 
 /// A convenient trait to construct an iterator returning non-overlapping mutable
 /// groups defined by a predicate.
-pub trait GroupByMut<T, P>
-where P: FnMut(&T, &T) -> bool
+pub trait GroupByMut<T>
 {
-    /// Returns an iterator on slice groups using the *linear search* method.
-    fn linear_group_by_mut(&mut self, predicate: P) -> LinearGroupByMut<T, P>;
+    /// Returns an iterator on mutable slice groups using the *linear search* method.
+    fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
+    where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on slice groups using the *binary search* method.
+    /// Returns an iterator on mutable slice groups based on the [`Partial::eq`] method of `T`,
+    /// it uses *linear search* to iterate over groups.
+    ///
+    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    fn linear_group_mut(&mut self) -> LinearGroupMut<T>
+    where T: PartialEq;
+
+    /// Returns an iterator on mutable slice groups using the *binary search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn binary_group_by_mut(&mut self, predicate: P) -> BinaryGroupByMut<T, P>;
+    fn binary_group_by_mut<P>(&mut self, predicate: P) -> BinaryGroupByMut<T, P>
+    where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on slice groups using the *exponential search* method.
+    /// Returns an iterator on mutable slice groups based on the [`Partial::eq`] method of `T`,
+    /// it uses *binary search* to iterate over groups.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
-    fn exponential_group_by_mut(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>;
+    ///
+    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
+    where T: PartialEq;
+
+    /// Returns an iterator on mutable slice groups using the *exponential search* method.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    fn exponential_group_by_mut<P>(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>
+    where P: FnMut(&T, &T) -> bool;
+
+    /// Returns an iterator on mutable slice groups based on the [`Partial::eq`] method of `T`,
+    /// it uses *exponential search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    ///
+    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    fn exponential_group_mut(&mut self) -> ExponentialGroupMut<T>
+    where T: PartialEq;
 }
 
-impl<T, P> GroupBy<T, P> for [T]
-where P: FnMut(&T, &T) -> bool
+impl<T> GroupBy<T> for [T]
 {
-    fn linear_group_by(&self, predicate: P) -> LinearGroupBy<T, P> {
+    fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
+    where P: FnMut(&T, &T) -> bool,
+    {
         LinearGroupBy::new(self, predicate)
     }
 
-    fn binary_group_by(&self, predicate: P) -> BinaryGroupBy<T, P> {
+    fn linear_group(&self) -> LinearGroup<T>
+    where T: PartialEq,
+    {
+        LinearGroup::new(self)
+    }
+
+    fn binary_group_by<P>(&self, predicate: P) -> BinaryGroupBy<T, P>
+    where P: FnMut(&T, &T) -> bool,
+    {
         BinaryGroupBy::new(self, predicate)
     }
 
-    fn exponential_group_by(&self, predicate: P) -> ExponentialGroupBy<T, P> {
+    fn binary_group(&self) -> BinaryGroup<T>
+    where T: PartialEq,
+    {
+        BinaryGroup::new(self)
+    }
+
+    fn exponential_group_by<P>(&self, predicate: P) -> ExponentialGroupBy<T, P>
+    where P: FnMut(&T, &T) -> bool,
+    {
         ExponentialGroupBy::new(self, predicate)
+    }
+
+    fn exponential_group(&self) -> ExponentialGroup<T>
+    where T: PartialEq,
+    {
+        ExponentialGroup::new(self)
     }
 }
 
-impl<T, P> GroupByMut<T, P> for [T]
-where P: FnMut(&T, &T) -> bool
+impl<T> GroupByMut<T> for [T]
 {
-    fn linear_group_by_mut(&mut self, predicate: P) -> LinearGroupByMut<T, P> {
+    fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
+    where P: FnMut(&T, &T) -> bool,
+    {
         LinearGroupByMut::new(self, predicate)
     }
 
-    fn binary_group_by_mut(&mut self, predicate: P) -> BinaryGroupByMut<T, P> {
+    fn linear_group_mut(&mut self) -> LinearGroupMut<T>
+    where T: PartialEq,
+    {
+        LinearGroupMut::new(self)
+    }
+
+    fn binary_group_by_mut<P>(&mut self, predicate: P) -> BinaryGroupByMut<T, P>
+    where P: FnMut(&T, &T) -> bool,
+    {
         BinaryGroupByMut::new(self, predicate)
     }
 
-    fn exponential_group_by_mut(&mut self, predicate: P) -> ExponentialGroupByMut<T, P> {
+    fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
+    where T: PartialEq,
+    {
+        BinaryGroupMut::new(self)
+    }
+
+    fn exponential_group_by_mut<P>(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>
+    where P: FnMut(&T, &T) -> bool,
+    {
         ExponentialGroupByMut::new(self, predicate)
+    }
+
+    fn exponential_group_mut(&mut self) -> ExponentialGroupMut<T>
+    where T: PartialEq,
+    {
+        ExponentialGroupMut::new(self)
     }
 }
