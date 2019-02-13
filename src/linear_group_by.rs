@@ -169,7 +169,7 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupBy<'a, T, P> {
 group_by!{ struct LinearGroupBy, &'a [T], from_raw_parts }
 
 
-/// An iterator that will return non-overlapping groups in the slice
+/// An iterator that will return non-overlapping *mutable* groups in the slice
 /// using *linear/sequential search*.
 ///
 /// It will gives two contiguous elements to the predicate function therefore the slice
@@ -216,6 +216,13 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupByMut<'a, T, P> {
 
 group_by!{ struct LinearGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+/// An iterator that will return non-overlapping groups of equal elements
+/// in the slice using *linear/sequential search*.
+///
+/// It will gives two contiguous elements to the [`PartialEq::eq`] function
+/// therefore the slice must not be necessarily sorted.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
 pub struct LinearGroup<'a, T: 'a>(LinearGroupBy<'a, T, fn(&T, &T) -> bool>);
 
 impl<'a, T: 'a> LinearGroup<'a, T>
@@ -228,6 +235,13 @@ where T: PartialEq,
 
 group_by_partial_eq!{ struct LinearGroup, &'a [T] }
 
+/// An iterator that will return non-overlapping *mutable* groups of equal elements
+/// in the slice using *linear/sequential search*.
+///
+/// It will gives two contiguous elements to the [`PartialEq::eq`] function
+/// therefore the slice must not be necessarily sorted.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
 pub struct LinearGroupMut<'a, T: 'a>(LinearGroupByMut<'a, T, fn(&T, &T) -> bool>);
 
 impl<'a, T: 'a> LinearGroupMut<'a, T>

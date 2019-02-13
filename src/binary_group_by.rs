@@ -78,9 +78,8 @@ macro_rules! binary_group_by {
 
 /// An iterator that will return non-overlapping groups in the slice using *binary search*.
 ///
-/// It will not necessarily gives contiguous elements to
-/// the predicate function. The predicate function should implement an order consistent
-/// with the sort order of the slice.
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
 pub struct BinaryGroupBy<'a, T, P> {
     ptr: *const T,
     end: *const T,
@@ -120,11 +119,11 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupBy<'a, T, P> {
 
 binary_group_by!{ struct BinaryGroupBy, &'a [T], from_raw_parts }
 
-/// An iterator that will return non-overlapping mutable groups in the slice using *binary search*.
+/// An iterator that will return non-overlapping *mutable* groups
+/// in the slice using *binary search*.
 ///
-/// It will not necessarily gives contiguous elements to
-/// the predicate function. The predicate function should implement an order consistent
-/// with the sort order of the slice.
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
 pub struct BinaryGroupByMut<'a, T, P> {
     ptr: *mut T,
     end: *mut T,
@@ -167,6 +166,13 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupByMut<'a, T, P> {
 
 binary_group_by!{ struct BinaryGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+/// An iterator that will return non-overlapping groups of equal elements, according to
+/// the [`PartialEq::eq`] function in the slice using *binary search*.
+///
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
 pub struct BinaryGroup<'a, T: 'a>(BinaryGroupBy<'a, T, fn(&T, &T) -> bool>);
 
 impl<'a, T: 'a> BinaryGroup<'a, T>
@@ -179,6 +185,13 @@ where T: PartialEq,
 
 group_by_partial_eq!{ struct BinaryGroup, &'a [T] }
 
+/// An iterator that will return non-overlapping *mutable* groups of equal elements, according to
+/// the [`PartialEq::eq`] function in the slice using *binary search*.
+///
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
 pub struct BinaryGroupMut<'a, T: 'a>(BinaryGroupByMut<'a, T, fn(&T, &T) -> bool>);
 
 impl<'a, T: 'a> BinaryGroupMut<'a, T>

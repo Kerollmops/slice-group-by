@@ -271,10 +271,10 @@ pub trait GroupBy<T> {
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on slice groups based on the [`Partial::eq`] method of `T`,
+    /// Returns an iterator on slice groups based on the [`PartialEq::eq`] method of `T`,
     /// it uses *linear search* to iterate over groups.
     ///
-    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
 
@@ -285,13 +285,13 @@ pub trait GroupBy<T> {
     fn binary_group_by<P>(&self, predicate: P) -> BinaryGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on slice groups based on the [`Partial::eq`] method of `T`,
+    /// Returns an iterator on slice groups based on the [`PartialEq::eq`] method of `T`,
     /// it uses *binary search* to iterate over groups.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
     ///
-    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn binary_group(&self) -> BinaryGroup<T>
     where T: PartialEq;
 
@@ -302,63 +302,63 @@ pub trait GroupBy<T> {
     fn exponential_group_by<P>(&self, predicate: P) -> ExponentialGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on slice groups based on the [`Partial::eq`] method of `T`,
+    /// Returns an iterator on slice groups based on the [`PartialEq::eq`] method of `T`,
     /// it uses *exponential search* to iterate over groups.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
     ///
-    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn exponential_group(&self) -> ExponentialGroup<T>
     where T: PartialEq;
 }
 
-/// A convenient trait to construct an iterator returning non-overlapping mutable
+/// A convenient trait to construct an iterator returning non-overlapping *mutable*
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
-    /// Returns an iterator on mutable slice groups using the *linear search* method.
+    /// Returns an iterator on *mutable* slice groups using the *linear search* method.
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on mutable slice groups based on the [`Partial::eq`] method of `T`,
+    /// Returns an iterator on *mutable* slice groups based on the [`PartialEq::eq`] method of `T`,
     /// it uses *linear search* to iterate over groups.
     ///
-    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
 
-    /// Returns an iterator on mutable slice groups using the *binary search* method.
+    /// Returns an iterator on *mutable* slice groups using the *binary search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
     fn binary_group_by_mut<P>(&mut self, predicate: P) -> BinaryGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on mutable slice groups based on the [`Partial::eq`] method of `T`,
+    /// Returns an iterator on *mutable* slice groups based on the [`PartialEq::eq`] method of `T`,
     /// it uses *binary search* to iterate over groups.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
     ///
-    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
     where T: PartialEq;
 
-    /// Returns an iterator on mutable slice groups using the *exponential search* method.
+    /// Returns an iterator on *mutable* slice groups using the *exponential search* method.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
     fn exponential_group_by_mut<P>(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool;
 
-    /// Returns an iterator on mutable slice groups based on the [`Partial::eq`] method of `T`,
+    /// Returns an iterator on *mutable* slice groups based on the [`PartialEq::eq`] method of `T`,
     /// it uses *exponential search* to iterate over groups.
     ///
     /// The predicate function should implement an order consistent with
     /// the sort order of the slice.
     ///
-    /// [`Partial::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn exponential_group_mut(&mut self) -> ExponentialGroupMut<T>
     where T: PartialEq;
 }
