@@ -66,7 +66,7 @@
 #[cfg(all(not(test), not(feature = "std")))]
 extern crate core as std;
 
-macro_rules! binary_group {
+macro_rules! group_by_partial_eq {
     (struct $name:ident, $elem:ty) => {
         impl<'a, T: 'a> $name<'a, T> {
             #[inline]

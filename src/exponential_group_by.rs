@@ -177,7 +177,7 @@ where T: PartialEq,
     }
 }
 
-binary_group!{ struct ExponentialGroup, &'a [T] }
+group_by_partial_eq!{ struct ExponentialGroup, &'a [T] }
 
 pub struct ExponentialGroupMut<'a, T: 'a>(ExponentialGroupByMut<'a, T, fn(&T, &T) -> bool>);
 
@@ -189,7 +189,7 @@ where T: PartialEq,
     }
 }
 
-binary_group!{ struct ExponentialGroupMut, &'a mut [T] }
+group_by_partial_eq!{ struct ExponentialGroupMut, &'a mut [T] }
 
 #[cfg(test)]
 mod tests {
