@@ -78,9 +78,8 @@ macro_rules! exponential_group_by {
 
 /// An iterator that will reutrn non-overlapping groups in the slice using *exponential search*.
 ///
-/// It will not necessarily gives contiguous elements to
-/// the predicate function. The predicate function should implement an order consistent
-/// with the sort order of the slice.
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
 pub struct ExponentialGroupBy<'a, T, P> {
     ptr: *const T,
     end: *const T,
@@ -120,11 +119,11 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupBy<'a, T, P> {
 
 exponential_group_by!{ struct ExponentialGroupBy, &'a [T], from_raw_parts }
 
-/// An iterator that will reutrn non-overlapping mutable groups in the slice using *exponential search*.
+/// An iterator that will reutrn non-overlapping *mutable* groups
+/// in the slice using *exponential search*.
 ///
-/// It will not necessarily gives contiguous elements to
-/// the predicate function. The predicate function should implement an order consistent
-/// with the sort order of the slice.
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
 pub struct ExponentialGroupByMut<'a, T, P> {
     ptr: *mut T,
     end: *mut T,
@@ -167,6 +166,13 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupByMut<'a, T, P> {
 
 exponential_group_by!{ struct ExponentialGroupByMut, &'a mut [T], from_raw_parts_mut }
 
+/// An iterator that will return non-overlapping groups of equal elements, according to
+/// the [`PartialEq::eq`] function in the slice using *exponential search*.
+///
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
 pub struct ExponentialGroup<'a, T: 'a>(ExponentialGroupBy<'a, T, fn(&T, &T) -> bool>);
 
 impl<'a, T: 'a> ExponentialGroup<'a, T>
@@ -179,6 +185,13 @@ where T: PartialEq,
 
 group_by_partial_eq!{ struct ExponentialGroup, &'a [T] }
 
+/// An iterator that will return non-overlapping *mutable* groups of equal elements, according to
+/// the [`PartialEq::eq`] function in the slice using *exponential search*.
+///
+/// It will not necessarily gives contiguous elements to the predicate function.
+/// The predicate function should implement an order consistent with the sort order of the slice.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
 pub struct ExponentialGroupMut<'a, T: 'a>(ExponentialGroupByMut<'a, T, fn(&T, &T) -> bool>);
 
 impl<'a, T: 'a> ExponentialGroupMut<'a, T>
