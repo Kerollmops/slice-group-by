@@ -226,7 +226,7 @@ where T: PartialEq,
     }
 }
 
-binary_group!{ struct LinearGroup, &'a [T] }
+group_by_partial_eq!{ struct LinearGroup, &'a [T] }
 
 pub struct LinearGroupMut<'a, T: 'a>(LinearGroupByMut<'a, T, fn(&T, &T) -> bool>);
 
@@ -238,7 +238,7 @@ where T: PartialEq,
     }
 }
 
-binary_group!{ struct LinearGroupMut, &'a mut [T] }
+group_by_partial_eq!{ struct LinearGroupMut, &'a mut [T] }
 
 #[cfg(test)]
 mod tests {
