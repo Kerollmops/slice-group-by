@@ -20,6 +20,26 @@
 //! assert_eq!(iter.next(), None);
 //! ```
 //!
+//! # Example: Linear Searched Immutable Str Slices
+//!
+//! You will only need to define a function that returns `true` if two `char` are in the same group.
+//!
+//! The `LinearStrGroupBy` iterator will always gives contiguous `char` to the predicate function.
+//!
+//! ```rust
+//! use slice_group_by::StrGroupBy;
+//!
+//! let string = "aaaabbbbb饰饰cccc";
+//!
+//! let mut iter = string.linear_group_by(|a, b| a == b);
+//!
+//! assert_eq!(iter.next(), Some("aaaa"));
+//! assert_eq!(iter.next(), Some("bbbbb"));
+//! assert_eq!(iter.next(), Some("饰饰"));
+//! assert_eq!(iter.next(), Some("cccc"));
+//! assert_eq!(iter.next(), None);
+//! ```
+//!
 //! # Example: Binary Searched Mutable Groups
 //!
 //! It is also possible to get mutable non overlapping groups of a slice.
