@@ -11,7 +11,7 @@ It provides tools for efficiently iterating over a slice by groups defined by a 
 
 ### Differences with `Itertools::group_by`
 
-The [`Itertools::group_by`] method use a key to compare elements, this library works like, say, [`slice::sort_by`], it uses a comparison function. It works on every `Iterator` type, `slice-group-by` work only with mutable and immutable slices, which is the power of this library, it is fast thanks to [data locality].
+The [`Itertools::group_by`] method use a key to compare elements, this library works like, say, [`slice::sort_by`], it uses a comparison function. It works on every `Iterator` type, `slice-group-by` work only with mutable `slice`, immutable `slice` and immutable `str`, which is the power of this library, it is fast thanks to [data locality].
 
 Also `slice-group-by` support multiple search algorithms (i.e. [linear], [binary] and [exponential search]) and can return groups starting from the end.
 
