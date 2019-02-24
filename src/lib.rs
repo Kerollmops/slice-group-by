@@ -115,6 +115,7 @@ macro_rules! group_by_partial_eq {
 mod linear_group_by;
 mod binary_group_by;
 mod exponential_group_by;
+mod linear_str_group_by;
 
 use std::cmp::{self, Ordering};
 
@@ -135,6 +136,10 @@ pub use self::exponential_group_by::{
     ExponentialGroup,
     ExponentialGroupByMut,
     ExponentialGroupMut,
+};
+pub use self::linear_str_group_by::{
+    LinearStrGroupBy,
+    LinearStrGroup,
 };
 
 #[cfg(feature = "nightly")]
@@ -266,7 +271,8 @@ where F: FnMut(&T) -> B,
 
 /// A convenient trait to construct an iterator returning non-overlapping groups
 /// defined by a predicate.
-pub trait GroupBy<T> {
+pub trait GroupBy<T>
+{
     /// Returns an iterator on slice groups using the *linear search* method.
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool;
@@ -441,107 +447,30 @@ impl<T> GroupByMut<T> for [T]
     }
 }
 
-pub struct LinearStrGroupBy<'a, P> {
-    inner: &'a str,
-    predicate: P,
-}
-
-impl<'a, P> LinearStrGroupBy<'a, P> {
-    pub fn new(string: &'a str, predicate: P) -> Self {
-        Self {
-            inner: string,
-            predicate: predicate,
-        }
-    }
-}
-
-impl<'a, P> Iterator for LinearStrGroupBy<'a, P>
-where P: FnMut(char, char) -> bool,
+/// A convenient trait to construct an iterator returning non-overlapping `str` slices
+/// defined by a predicate.
+pub trait StrGroupBy
 {
-    type Item = &'a str;
+    /// Returns an iterator on `str` groups using the *linear search* method.
+    fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
+    where P: FnMut(char, char) -> bool;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.inner.is_empty() { return None }
-
-        let mut iter = self.inner.char_indices().peekable();
-        while let (Some((_, ac)), Some((bi, bc))) = (iter.next(), iter.peek().cloned())
-        {
-            if !(self.predicate)(ac, bc) {
-                let (left, right) = self.inner.split_at(bi);
-                self.inner = right;
-                return Some(left);
-            }
-        }
-
-        let output = self.inner;
-        self.inner = "";
-        return Some(output);
-    }
+    /// Returns an iterator on `str` groups based on the [`PartialEq::eq`] method of `char`,
+    /// it uses *linear search* to iterate over groups.
+    ///
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/primitive.char.html#impl-PartialEq%3Cchar%3E
+    fn linear_group(&self) -> LinearStrGroup;
 }
 
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn str_easy() {
-        let string = "aaaabbbbbaacccc";
-
-        let mut iter = LinearStrGroupBy::new(string, |a, b| a == b);
-
-        assert_eq!(iter.next(), Some("aaaa"));
-        assert_eq!(iter.next(), Some("bbbbb"));
-        assert_eq!(iter.next(), Some("aa"));
-        assert_eq!(iter.next(), Some("cccc"));
-        assert_eq!(iter.next(), None);
+impl StrGroupBy for str
+{
+    fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
+    where P: FnMut(char, char) -> bool,
+    {
+        LinearStrGroupBy::new(self, predicate)
     }
 
-    #[test]
-    fn str_kanji() {
-        let string = "包包饰饰与与钥钥匙匙扣扣";
-
-        let mut iter = LinearStrGroupBy::new(string, |a, b| a == b);
-
-        assert_eq!(iter.next(), Some("包包"));
-        assert_eq!(iter.next(), Some("饰饰"));
-        assert_eq!(iter.next(), Some("与与"));
-        assert_eq!(iter.next(), Some("钥钥"));
-        assert_eq!(iter.next(), Some("匙匙"));
-        assert_eq!(iter.next(), Some("扣扣"));
-        assert_eq!(iter.next(), None);
-    }
-
-    fn is_cjk(c: char) -> bool {
-        (c >= '\u{2e80}' && c <= '\u{2eff}') ||
-        (c >= '\u{2f00}' && c <= '\u{2fdf}') ||
-        (c >= '\u{3040}' && c <= '\u{309f}') ||
-        (c >= '\u{30a0}' && c <= '\u{30ff}') ||
-        (c >= '\u{3100}' && c <= '\u{312f}') ||
-        (c >= '\u{3200}' && c <= '\u{32ff}') ||
-        (c >= '\u{3400}' && c <= '\u{4dbf}') ||
-        (c >= '\u{4e00}' && c <= '\u{9fff}') ||
-        (c >= '\u{f900}' && c <= '\u{faff}')
-    }
-
-    #[test]
-    fn str_ascii_cjk() {
-        let string = "abc包包bbccdd饰饰ac与与cbca钥钥efgh匙匙brbtb扣扣";
-
-        let mut iter = LinearStrGroupBy::new(string, |a, b| is_cjk(a) == is_cjk(b));
-
-        assert_eq!(iter.next(), Some("abc"));
-        assert_eq!(iter.next(), Some("包包"));
-        assert_eq!(iter.next(), Some("bbccdd"));
-        assert_eq!(iter.next(), Some("饰饰"));
-        assert_eq!(iter.next(), Some("ac"));
-        assert_eq!(iter.next(), Some("与与"));
-        assert_eq!(iter.next(), Some("cbca"));
-        assert_eq!(iter.next(), Some("钥钥"));
-        assert_eq!(iter.next(), Some("efgh"));
-        assert_eq!(iter.next(), Some("匙匙"));
-        assert_eq!(iter.next(), Some("brbtb"));
-        assert_eq!(iter.next(), Some("扣扣"));
-        assert_eq!(iter.next(), None);
+    fn linear_group(&self) -> LinearStrGroup {
+        LinearStrGroup::new(self)
     }
 }
