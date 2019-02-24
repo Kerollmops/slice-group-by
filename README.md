@@ -5,7 +5,7 @@
 [![dependency status](https://deps.rs/repo/github/Kerollmops/slice-group-by/status.svg)](https://deps.rs/repo/github/Kerollmops/slice-group-by)
 [![License](https://img.shields.io/github/license/Kerollmops/slice-group-by.svg)](https://github.com/Kerollmops/slice-group-by)
 
-An implementation of the `group_by` Haskell function for slices only.
+An implementation of the `group_by` Haskell function for `slice` and `str` only.
 
 It provides tools for efficiently iterating over a slice by groups defined by a function that specifies if two elements are in the same group.
 
@@ -40,6 +40,26 @@ let mut iter = slice.linear_group_by(|a, b| a == b);
 assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
 assert_eq!(iter.next(), Some(&[3, 3][..]));
 assert_eq!(iter.next(), Some(&[2, 2, 2][..]));
+assert_eq!(iter.next(), None);
+```
+
+### Linear Searched Immutable Str Groups
+
+You will only need to define a function that returns `true` if two `char` are in the same group.
+
+The `LinearStrGroupBy` iterator will always gives contiguous `char` to the predicate function.
+
+```rust
+use slice_group_by::StrGroupBy;
+
+let string = "aaaabbbbb饰饰cccc";
+
+let mut iter = string.linear_group_by(|a, b| a == b);
+
+assert_eq!(iter.next(), Some("aaaa"));
+assert_eq!(iter.next(), Some("bbbbb"));
+assert_eq!(iter.next(), Some("饰饰"));
+assert_eq!(iter.next(), Some("cccc"));
 assert_eq!(iter.next(), None);
 ```
 
