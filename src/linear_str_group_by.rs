@@ -1,5 +1,9 @@
 use std::iter::FusedIterator;
 
+/// An iterator that will return non-overlapping groups in the `str`
+/// using *linear/sequential search*.
+///
+/// It will gives two contiguous `char` to the predicate function.
 pub struct LinearStrGroupBy<'a, P> {
     inner: &'a str,
     predicate: P,
@@ -71,6 +75,12 @@ impl<'a, P> FusedIterator for LinearStrGroupBy<'a, P>
 where P: FnMut(char, char) -> bool,
 { }
 
+/// An iterator that will return non-overlapping groups of equal `char`
+/// in the str using *linear/sequential search*.
+///
+/// It will use the `char` [`PartialEq::eq`] function.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/primitive.char.html#impl-PartialEq%3Cchar%3E
 pub struct LinearStrGroup<'a>(LinearStrGroupBy<'a, fn(char, char) -> bool>);
 
 impl<'a> LinearStrGroup<'a> {
