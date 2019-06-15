@@ -160,6 +160,8 @@ pub use self::exponential_group_by::{
 pub use self::linear_str_group_by::{
     LinearStrGroupBy,
     LinearStrGroup,
+    LinearStrGroupByMut,
+    LinearStrGroupMut,
 };
 
 #[cfg(feature = "nightly")]
@@ -482,6 +484,21 @@ pub trait StrGroupBy
     fn linear_group(&self) -> LinearStrGroup;
 }
 
+/// A convenient trait to construct an iterator returning non-overlapping *mutable* `str` slices
+/// defined by a predicate.
+pub trait StrGroupByMut
+{
+    /// Returns an iterator on *mutable* `str` groups using the *linear search* method.
+    fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>
+    where P: FnMut(char, char) -> bool;
+
+    /// Returns an iterator on *mutable* `str` groups based on the [`PartialEq::eq`] method of `char`,
+    /// it uses *linear search* to iterate over groups.
+    ///
+    /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/primitive.char.html#impl-PartialEq%3Cchar%3E
+    fn linear_group_mut(&mut self) -> LinearStrGroupMut;
+}
+
 impl StrGroupBy for str
 {
     fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
@@ -492,5 +509,18 @@ impl StrGroupBy for str
 
     fn linear_group(&self) -> LinearStrGroup {
         LinearStrGroup::new(self)
+    }
+}
+
+impl StrGroupByMut for str
+{
+    fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>
+    where P: FnMut(char, char) -> bool,
+    {
+        LinearStrGroupByMut::new(self, predicate)
+    }
+
+    fn linear_group_mut(&mut self) -> LinearStrGroupMut {
+        LinearStrGroupMut::new(self)
     }
 }

@@ -1,4 +1,7 @@
 use std::iter::FusedIterator;
+use std::mem;
+use std::slice::from_raw_parts_mut;
+use std::str::from_utf8_unchecked_mut;
 
 /// An iterator that will return non-overlapping groups in the `str`
 /// using *linear/sequential search*.
@@ -76,7 +79,7 @@ where P: FnMut(char, char) -> bool,
 { }
 
 /// An iterator that will return non-overlapping groups of equal `char`
-/// in the str using *linear/sequential search*.
+/// in the `str` using *linear/sequential search*.
 ///
 /// It will use the `char` [`PartialEq::eq`] function.
 ///
@@ -112,6 +115,151 @@ impl<'a> DoubleEndedIterator for LinearStrGroup<'a> {
 impl<'a> FusedIterator for LinearStrGroup<'a>
 { }
 
+/// An iterator that will return non-overlapping *mutable* groups in the `str`
+/// using *linear/sequential search*.
+///
+/// It will gives two contiguous `char` to the predicate function.
+pub struct LinearStrGroupByMut<'a, P> {
+    inner: &'a mut str,
+    predicate: P,
+}
+
+impl<'a, P> LinearStrGroupByMut<'a, P> {
+    pub fn new(string: &'a mut str, predicate: P) -> Self {
+        Self {
+            inner: string,
+            predicate: predicate,
+        }
+    }
+
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        self.inner
+    }
+
+    #[inline]
+    pub fn as_str_mut(&mut self) -> &mut str {
+        &mut self.inner
+    }
+}
+
+impl<'a, P> Iterator for LinearStrGroupByMut<'a, P>
+where P: FnMut(char, char) -> bool,
+{
+    type Item = &'a mut str;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.inner.is_empty() { return None }
+
+        let mut iter = self.inner.char_indices().peekable();
+        while let (Some((_, ac)), Some((bi, bc))) = (iter.next(), iter.peek().cloned())
+        {
+            if !(self.predicate)(ac, bc) {
+                let len = self.inner.len();
+                let ptr = unsafe { self.inner.as_bytes_mut().as_mut_ptr() };
+
+                let left = unsafe {
+                    let slice = from_raw_parts_mut(ptr, bi);
+                    from_utf8_unchecked_mut(slice)
+                };
+
+                let right = unsafe {
+                    let slice = from_raw_parts_mut(ptr.add(bi), len - bi);
+                    from_utf8_unchecked_mut(slice)
+                };
+
+                self.inner = right;
+                return Some(left);
+            }
+        }
+
+        let output = mem::replace(&mut self.inner, Default::default());
+        return Some(output);
+    }
+}
+
+impl<'a, P> DoubleEndedIterator for LinearStrGroupByMut<'a, P>
+where P: FnMut(char, char) -> bool,
+{
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.inner.is_empty() { return None }
+
+        let mut iter = self.inner.char_indices().rev().peekable();
+        while let (Some((ai, ac)), Some((_, bc))) = (iter.next(), iter.peek().cloned())
+        {
+            if !(self.predicate)(ac, bc) {
+                let len = self.inner.len();
+                let ptr = unsafe { self.inner.as_bytes_mut().as_mut_ptr() };
+
+                let left = unsafe {
+                    let slice = from_raw_parts_mut(ptr, ai);
+                    from_utf8_unchecked_mut(slice)
+                };
+
+                let right = unsafe {
+                    let slice = from_raw_parts_mut(ptr.add(ai), len - ai);
+                    from_utf8_unchecked_mut(slice)
+                };
+
+                self.inner = left;
+                return Some(right);
+            }
+        }
+
+        let output = mem::replace(&mut self.inner, Default::default());
+        return Some(output);
+    }
+}
+
+impl<'a, P> FusedIterator for LinearStrGroupByMut<'a, P>
+where P: FnMut(char, char) -> bool,
+{ }
+
+/// An iterator that will return non-overlapping *mutable* groups of equal `char`
+/// in the `str` using *linear/sequential search*.
+///
+/// It will use the `char` [`PartialEq::eq`] function.
+///
+/// [`PartialEq::eq`]: https://doc.rust-lang.org/std/primitive.char.html#impl-PartialEq%3Cchar%3E
+pub struct LinearStrGroupMut<'a>(LinearStrGroupByMut<'a, fn(char, char) -> bool>);
+
+impl<'a> LinearStrGroupMut<'a> {
+    pub fn new(string: &'a mut str) -> LinearStrGroupMut {
+        LinearStrGroupMut(LinearStrGroupByMut::new(string, |a, b| a == b))
+    }
+
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+
+    #[inline]
+    pub fn as_str_mut(&mut self) -> &mut str {
+        self.0.as_str_mut()
+    }
+}
+
+impl<'a> Iterator for LinearStrGroupMut<'a> {
+    type Item = &'a mut str;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> DoubleEndedIterator for LinearStrGroupMut<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back()
+    }
+}
+
+impl<'a> FusedIterator for LinearStrGroupMut<'a>
+{ }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,6 +274,19 @@ mod tests {
         assert_eq!(iter.next(), Some("bbbbb"));
         assert_eq!(iter.next(), Some("aa"));
         assert_eq!(iter.next(), Some("cccc"));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn str_mut_easy() {
+        let mut string = String::from("aaaabbbbbaacccc");
+
+        let mut iter = LinearStrGroupMut::new(&mut string);
+
+        assert_eq!(iter.next().map(|s| &*s), Some("aaaa"));
+        assert_eq!(iter.next().map(|s| &*s), Some("bbbbb"));
+        assert_eq!(iter.next().map(|s| &*s), Some("aa"));
+        assert_eq!(iter.next().map(|s| &*s), Some("cccc"));
         assert_eq!(iter.next(), None);
     }
 
@@ -179,6 +340,19 @@ mod tests {
         assert_eq!(iter.next(), Some("aa"));
         assert_eq!(iter.next(), Some("bbbbb"));
         assert_eq!(iter.next(), Some("aaaa"));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn str_mut_rev_easy() {
+        let mut string = String::from("aaaabbbbbaacccc");
+
+        let mut iter = LinearStrGroupMut::new(&mut string).rev();
+
+        assert_eq!(iter.next().map(|s| &*s), Some("cccc"));
+        assert_eq!(iter.next().map(|s| &*s), Some("aa"));
+        assert_eq!(iter.next().map(|s| &*s), Some("bbbbb"));
+        assert_eq!(iter.next().map(|s| &*s), Some("aaaa"));
         assert_eq!(iter.next(), None);
     }
 
