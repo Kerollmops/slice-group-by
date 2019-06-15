@@ -47,6 +47,10 @@ macro_rules! binary_group_by {
                 let len = self.remainder_len();
                 (1, Some(len))
             }
+
+            fn last(mut self) -> Option<Self::Item> {
+                self.next_back()
+            }
         }
 
         impl<'a, T: 'a, P> DoubleEndedIterator for $name<'a, T, P>
