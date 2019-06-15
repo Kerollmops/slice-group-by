@@ -49,6 +49,10 @@ where P: FnMut(char, char) -> bool,
         self.inner = "";
         return Some(output);
     }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
 }
 
 impl<'a, P> DoubleEndedIterator for LinearStrGroupBy<'a, P>
@@ -102,6 +106,10 @@ impl<'a> Iterator for LinearStrGroup<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
+    }
+
+    fn last(self) -> Option<Self::Item> {
+        self.0.last()
     }
 }
 
@@ -177,6 +185,10 @@ where P: FnMut(char, char) -> bool,
         let output = mem::replace(&mut self.inner, Default::default());
         return Some(output);
     }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
 }
 
 impl<'a, P> DoubleEndedIterator for LinearStrGroupByMut<'a, P>
@@ -247,6 +259,10 @@ impl<'a> Iterator for LinearStrGroupMut<'a> {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
+    }
+
+    fn last(self) -> Option<Self::Item> {
+        self.0.last()
     }
 }
 

@@ -113,8 +113,8 @@ macro_rules! group_by_partial_eq {
                 self.0.size_hint()
             }
 
-            fn last(mut self) -> Option<Self::Item> {
-                self.0.next_back()
+            fn last(self) -> Option<Self::Item> {
+                self.0.last()
             }
         }
 
