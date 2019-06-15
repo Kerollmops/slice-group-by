@@ -11,7 +11,7 @@ keywords = ["slice", "group"]
 categories = ["algorithms"]
 
 [dev-dependencies]
-rand = "0.5"
+rand = "0.6.5"
 
 [features]
 default = ["std"]
