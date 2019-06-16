@@ -24,6 +24,7 @@ macro_rules! binary_group_by {
         {
             type Item = $elem;
 
+            #[inline]
             fn next(&mut self) -> Option<Self::Item> {
                 if self.is_empty() { return None }
 
@@ -56,6 +57,7 @@ macro_rules! binary_group_by {
         impl<'a, T: 'a, P> DoubleEndedIterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         {
+            #[inline]
             fn next_back(&mut self) -> Option<Self::Item> {
                 if self.is_empty() { return None }
 

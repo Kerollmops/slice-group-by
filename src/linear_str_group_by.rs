@@ -1,7 +1,108 @@
 use std::iter::FusedIterator;
 use std::mem;
-use std::slice::from_raw_parts_mut;
-use std::str::from_utf8_unchecked_mut;
+
+fn str_as_ptr(string: &str) -> *const u8 {
+    string.as_bytes().as_ptr()
+}
+
+fn str_as_mut_ptr(string: &mut str) -> *mut u8 {
+    unsafe { string.as_bytes_mut().as_mut_ptr() }
+}
+
+unsafe fn str_from_raw_parts<'a>(data: *const u8, len: usize) -> &'a str {
+    let slice = std::slice::from_raw_parts(data, len);
+    std::str::from_utf8_unchecked(slice)
+}
+
+unsafe fn str_from_raw_parts_mut<'a>(data: *mut u8, len: usize) -> &'a mut str {
+    let slice = std::slice::from_raw_parts_mut(data, len);
+    std::str::from_utf8_unchecked_mut(slice)
+}
+
+macro_rules! str_group_by {
+    (struct $name:ident, $elem:ty, $as_ptr:ident, $as_str:ident) => {
+        impl<'a, P> $name<'a, P> {
+            #[inline]
+            pub fn as_str(&self) -> &str {
+                self.inner
+            }
+
+            #[inline]
+            pub fn is_empty(&self) -> bool {
+                self.inner.is_empty()
+            }
+
+            #[inline]
+            pub fn remainder_len(&self) -> usize {
+                self.inner.len()
+            }
+        }
+
+        impl<'a, P> Iterator for $name<'a, P>
+        where P: FnMut(char, char) -> bool,
+        {
+            type Item = $elem;
+
+            #[inline]
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.inner.is_empty() { return None }
+
+                let mut iter = self.inner.char_indices().peekable();
+                while let (Some((_, ac)), Some((bi, bc))) = (iter.next(), iter.peek().cloned())
+                {
+                    if !(self.predicate)(ac, bc) {
+                        let len = self.inner.len();
+                        let ptr = $as_ptr(self.inner);
+
+                        let left = unsafe { $as_str(ptr, bi) };
+                        let right = unsafe { $as_str(ptr.add(bi), len - bi) };
+
+                        self.inner = right;
+                        return Some(left);
+                    }
+                }
+
+                let output = mem::replace(&mut self.inner, Default::default());
+                return Some(output);
+            }
+
+            fn last(mut self) -> Option<Self::Item> {
+                self.next_back()
+            }
+        }
+
+        impl<'a, P> DoubleEndedIterator for $name<'a, P>
+        where P: FnMut(char, char) -> bool,
+        {
+            #[inline]
+            fn next_back(&mut self) -> Option<Self::Item> {
+                if self.inner.is_empty() { return None }
+
+                let mut iter = self.inner.char_indices().rev().peekable();
+                while let (Some((ai, ac)), Some((_, bc))) = (iter.next(), iter.peek().cloned())
+                {
+                    if !(self.predicate)(ac, bc) {
+                        let len = self.inner.len();
+                        let ptr = $as_ptr(self.inner);
+
+                        let left = unsafe { $as_str(ptr, ai) };
+                        let right = unsafe { $as_str(ptr.add(ai), len - ai) };
+
+                        self.inner = left;
+                        return Some(right);
+                    }
+                }
+
+                let output = mem::replace(&mut self.inner, Default::default());
+                return Some(output);
+            }
+        }
+
+        impl<'a, P> FusedIterator for $name<'a, P>
+        where P: FnMut(char, char) -> bool,
+        { }
+    }
+}
 
 /// An iterator that will return non-overlapping groups in the `str`
 /// using *linear/sequential search*.
@@ -19,68 +120,9 @@ impl<'a, P> LinearStrGroupBy<'a, P> {
             predicate: predicate,
         }
     }
-
-    #[inline]
-    pub fn as_str(&self) -> &str {
-        self.inner
-    }
 }
 
-impl<'a, P> Iterator for LinearStrGroupBy<'a, P>
-where P: FnMut(char, char) -> bool,
-{
-    type Item = &'a str;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.inner.is_empty() { return None }
-
-        let mut iter = self.inner.char_indices().peekable();
-        while let (Some((_, ac)), Some((bi, bc))) = (iter.next(), iter.peek().cloned())
-        {
-            if !(self.predicate)(ac, bc) {
-                let (left, right) = self.inner.split_at(bi);
-                self.inner = right;
-                return Some(left);
-            }
-        }
-
-        let output = self.inner;
-        self.inner = "";
-        return Some(output);
-    }
-
-    fn last(mut self) -> Option<Self::Item> {
-        self.next_back()
-    }
-}
-
-impl<'a, P> DoubleEndedIterator for LinearStrGroupBy<'a, P>
-where P: FnMut(char, char) -> bool,
-{
-    #[inline]
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.inner.is_empty() { return None }
-
-        let mut iter = self.inner.char_indices().rev().peekable();
-        while let (Some((ai, ac)), Some((_, bc))) = (iter.next(), iter.peek().cloned())
-        {
-            if !(self.predicate)(ac, bc) {
-                let (left, right) = self.inner.split_at(ai);
-                self.inner = left;
-                return Some(right);
-            }
-        }
-
-        let output = self.inner;
-        self.inner = "";
-        return Some(output);
-    }
-}
-
-impl<'a, P> FusedIterator for LinearStrGroupBy<'a, P>
-where P: FnMut(char, char) -> bool,
-{ }
+str_group_by!{ struct LinearStrGroupBy, &'a str, str_as_ptr, str_from_raw_parts }
 
 /// An iterator that will return non-overlapping groups of equal `char`
 /// in the `str` using *linear/sequential search*.
@@ -98,6 +140,16 @@ impl<'a> LinearStrGroup<'a> {
     #[inline]
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[inline]
+    pub fn remainder_len(&self) -> usize {
+        self.0.remainder_len()
     }
 }
 
@@ -141,93 +193,12 @@ impl<'a, P> LinearStrGroupByMut<'a, P> {
     }
 
     #[inline]
-    pub fn as_str(&self) -> &str {
-        self.inner
-    }
-
-    #[inline]
     pub fn as_str_mut(&mut self) -> &mut str {
         &mut self.inner
     }
 }
 
-impl<'a, P> Iterator for LinearStrGroupByMut<'a, P>
-where P: FnMut(char, char) -> bool,
-{
-    type Item = &'a mut str;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.inner.is_empty() { return None }
-
-        let mut iter = self.inner.char_indices().peekable();
-        while let (Some((_, ac)), Some((bi, bc))) = (iter.next(), iter.peek().cloned())
-        {
-            if !(self.predicate)(ac, bc) {
-                let len = self.inner.len();
-                let ptr = unsafe { self.inner.as_bytes_mut().as_mut_ptr() };
-
-                let left = unsafe {
-                    let slice = from_raw_parts_mut(ptr, bi);
-                    from_utf8_unchecked_mut(slice)
-                };
-
-                let right = unsafe {
-                    let slice = from_raw_parts_mut(ptr.add(bi), len - bi);
-                    from_utf8_unchecked_mut(slice)
-                };
-
-                self.inner = right;
-                return Some(left);
-            }
-        }
-
-        let output = mem::replace(&mut self.inner, Default::default());
-        return Some(output);
-    }
-
-    fn last(mut self) -> Option<Self::Item> {
-        self.next_back()
-    }
-}
-
-impl<'a, P> DoubleEndedIterator for LinearStrGroupByMut<'a, P>
-where P: FnMut(char, char) -> bool,
-{
-    #[inline]
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.inner.is_empty() { return None }
-
-        let mut iter = self.inner.char_indices().rev().peekable();
-        while let (Some((ai, ac)), Some((_, bc))) = (iter.next(), iter.peek().cloned())
-        {
-            if !(self.predicate)(ac, bc) {
-                let len = self.inner.len();
-                let ptr = unsafe { self.inner.as_bytes_mut().as_mut_ptr() };
-
-                let left = unsafe {
-                    let slice = from_raw_parts_mut(ptr, ai);
-                    from_utf8_unchecked_mut(slice)
-                };
-
-                let right = unsafe {
-                    let slice = from_raw_parts_mut(ptr.add(ai), len - ai);
-                    from_utf8_unchecked_mut(slice)
-                };
-
-                self.inner = left;
-                return Some(right);
-            }
-        }
-
-        let output = mem::replace(&mut self.inner, Default::default());
-        return Some(output);
-    }
-}
-
-impl<'a, P> FusedIterator for LinearStrGroupByMut<'a, P>
-where P: FnMut(char, char) -> bool,
-{ }
+str_group_by!{ struct LinearStrGroupByMut, &'a mut str, str_as_mut_ptr, str_from_raw_parts_mut }
 
 /// An iterator that will return non-overlapping *mutable* groups of equal `char`
 /// in the `str` using *linear/sequential search*.
@@ -250,6 +221,16 @@ impl<'a> LinearStrGroupMut<'a> {
     #[inline]
     pub fn as_str_mut(&mut self) -> &mut str {
         self.0.as_str_mut()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[inline]
+    pub fn remainder_len(&self) -> usize {
+        self.0.remainder_len()
     }
 }
 
