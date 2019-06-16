@@ -5,16 +5,15 @@
 [![dependency status](https://deps.rs/repo/github/Kerollmops/slice-group-by/status.svg)](https://deps.rs/repo/github/Kerollmops/slice-group-by)
 [![License](https://img.shields.io/github/license/Kerollmops/slice-group-by.svg)](https://github.com/Kerollmops/slice-group-by)
 
-An implementation of the `group_by` Haskell function for `slice` and `str` only.
-
-It provides tools for efficiently iterating over a slice by groups defined by a function that specifies if two elements are in the same group.
+An implementation of the [`groupBy` Haskell function], providing tools for efficiently iterating over `slice` and `str` by groups defined by a function that specifies if two elements are in the same group.
 
 ### Differences with `Itertools::group_by`
 
-The [`Itertools::group_by`] method use a key to compare elements, this library works like, say, [`slice::sort_by`], it uses a comparison function. It works on every `Iterator` type, `slice-group-by` work only with mutable `slice`, immutable `slice` and immutable `str`, which is the power of this library, it is fast thanks to [data locality].
+The [`Itertools::group_by`] method use a key to compare elements, this library works like, say, [`slice::sort_by`], it uses a comparison function. It works on every `Iterator` type, `slice-group-by` work only with `slice` and `str`, which is the power of this library, it is fast thanks to [data locality].
 
 Also `slice-group-by` support multiple search algorithms (i.e. [linear], [binary] and [exponential search]) and can return groups starting from the end.
 
+[`groupBy` Haskell function]: http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-List.html#v:groupBy
 [`Itertools::group_by`]: https://docs.rs/itertools/0.8.0/itertools/trait.Itertools.html#method.group_by
 [`slice::sort_by`]: https://doc.rust-lang.org/std/primitive.slice.html#method.sort_by
 [data locality]: https://en.wikipedia.org/wiki/Locality_of_reference
