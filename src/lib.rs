@@ -132,16 +132,18 @@ macro_rules! group_by_partial_eq {
     }
 }
 
-mod linear_group_by;
+mod linear_group;
 mod binary_group_by;
 mod exponential_group_by;
 mod linear_str_group_by;
 
 use std::cmp::{self, Ordering};
 
-pub use self::linear_group_by::{
+pub use self::linear_group::{
+    LinearGroupByKey,
     LinearGroupBy,
     LinearGroup,
+    LinearGroupByKeyMut,
     LinearGroupByMut,
     LinearGroupMut,
 };
@@ -295,6 +297,10 @@ where F: FnMut(&T) -> B,
 /// defined by a predicate.
 pub trait GroupBy<T>
 {
+    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq;
+
     /// Returns an iterator on slice groups using the *linear search* method.
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool;
@@ -345,6 +351,10 @@ pub trait GroupBy<T>
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
+    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq;
+
     /// Returns an iterator on *mutable* slice groups using the *linear search* method.
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool;
@@ -393,6 +403,13 @@ pub trait GroupByMut<T>
 
 impl<T> GroupBy<T> for [T]
 {
+    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq
+    {
+        LinearGroupByKey::new(self, predicate)
+    }
+
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -432,6 +449,13 @@ impl<T> GroupBy<T> for [T]
 
 impl<T> GroupByMut<T> for [T]
 {
+    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq
+    {
+        LinearGroupByKeyMut::new(self, predicate)
+    }
+
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
