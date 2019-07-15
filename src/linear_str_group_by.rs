@@ -1,4 +1,3 @@
-use std::iter::FusedIterator;
 use std::mem;
 
 fn str_as_ptr(string: &str) -> *const u8 {
@@ -38,7 +37,7 @@ macro_rules! str_group_by {
             }
         }
 
-        impl<'a, P> Iterator for $name<'a, P>
+        impl<'a, P> std::iter::Iterator for $name<'a, P>
         where P: FnMut(char, char) -> bool,
         {
             type Item = $elem;
@@ -71,7 +70,7 @@ macro_rules! str_group_by {
             }
         }
 
-        impl<'a, P> DoubleEndedIterator for $name<'a, P>
+        impl<'a, P> std::iter::DoubleEndedIterator for $name<'a, P>
         where P: FnMut(char, char) -> bool,
         {
             #[inline]
@@ -98,7 +97,7 @@ macro_rules! str_group_by {
             }
         }
 
-        impl<'a, P> FusedIterator for $name<'a, P>
+        impl<'a, P> std::iter::FusedIterator for $name<'a, P>
         where P: FnMut(char, char) -> bool,
         { }
     }
@@ -172,7 +171,7 @@ impl<'a> DoubleEndedIterator for LinearStrGroup<'a> {
     }
 }
 
-impl<'a> FusedIterator for LinearStrGroup<'a>
+impl<'a> std::iter::FusedIterator for LinearStrGroup<'a>
 { }
 
 /// An iterator that will return non-overlapping *mutable* groups in the `str`
@@ -254,7 +253,7 @@ impl<'a> DoubleEndedIterator for LinearStrGroupMut<'a> {
     }
 }
 
-impl<'a> FusedIterator for LinearStrGroupMut<'a>
+impl<'a> std::iter::FusedIterator for LinearStrGroupMut<'a>
 { }
 
 #[cfg(test)]

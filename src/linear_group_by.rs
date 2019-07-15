@@ -1,7 +1,5 @@
 use std::slice::{from_raw_parts, from_raw_parts_mut};
-use std::iter::FusedIterator;
 use std::{fmt, marker};
-
 use crate::offset_from;
 
 macro_rules! group_by {
@@ -18,7 +16,7 @@ macro_rules! group_by {
             }
         }
 
-        impl<'a, T: 'a, P> Iterator for $name<'a, T, P>
+        impl<'a, T: 'a, P> std::iter::Iterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         {
             type Item = $elem;
@@ -75,7 +73,7 @@ macro_rules! group_by {
             }
         }
 
-        impl<'a, T: 'a, P> DoubleEndedIterator for $name<'a, T, P>
+        impl<'a, T: 'a, P> std::iter::DoubleEndedIterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         {
             fn next_back(&mut self) -> Option<Self::Item> {
@@ -118,7 +116,7 @@ macro_rules! group_by {
             }
         }
 
-        impl<'a, T: 'a, P> FusedIterator for $name<'a, T, P>
+        impl<'a, T: 'a, P> std::iter::FusedIterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         { }
     }

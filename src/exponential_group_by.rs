@@ -1,8 +1,6 @@
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::cmp::Ordering::{Less, Greater};
-use std::iter::FusedIterator;
 use std::{fmt, marker};
-
 use crate::{exponential_search_by, offset_from};
 
 macro_rules! exponential_group_by {
@@ -19,7 +17,7 @@ macro_rules! exponential_group_by {
             }
         }
 
-        impl<'a, T: 'a, P> Iterator for $name<'a, T, P>
+        impl<'a, T: 'a, P> std::iter::Iterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         {
             type Item = $elem;
@@ -53,7 +51,7 @@ macro_rules! exponential_group_by {
             }
         }
 
-        impl<'a, T: 'a, P> DoubleEndedIterator for $name<'a, T, P>
+        impl<'a, T: 'a, P> std::iter::DoubleEndedIterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         {
             fn next_back(&mut self) -> Option<Self::Item> {
@@ -74,7 +72,7 @@ macro_rules! exponential_group_by {
             }
         }
 
-        impl<'a, T: 'a, P> FusedIterator for $name<'a, T, P>
+        impl<'a, T: 'a, P> std::iter::FusedIterator for $name<'a, T, P>
         where P: FnMut(&T, &T) -> bool,
         { }
     }

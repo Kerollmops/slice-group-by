@@ -100,7 +100,7 @@ macro_rules! group_by_partial_eq {
             }
         }
 
-        impl<'a, T: 'a> Iterator for $name<'a, T>
+        impl<'a, T: 'a> std::iter::Iterator for $name<'a, T>
         where T: PartialEq,
         {
             type Item = $elem;
@@ -126,7 +126,7 @@ macro_rules! group_by_partial_eq {
             }
         }
 
-        impl<'a, T: 'a> FusedIterator for $name<'a, T>
+        impl<'a, T: 'a> std::iter::FusedIterator for $name<'a, T>
         where T: PartialEq,
         { }
     }
