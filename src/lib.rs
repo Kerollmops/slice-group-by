@@ -140,36 +140,55 @@ mod linear_str_group;
 use std::cmp::{self, Ordering};
 
 pub use self::linear_group::{
-    LinearGroupByKey,
     LinearGroupBy,
     LinearGroup,
-    LinearGroupByKeyMut,
     LinearGroupByMut,
     LinearGroupMut,
 };
+
+#[cfg(feature = "std")]
+pub use self::linear_group::{
+    LinearGroupByKey,
+    LinearGroupByKeyMut,
+};
+
 pub use self::binary_group::{
-    BinaryGroupByKey,
     BinaryGroupBy,
     BinaryGroup,
     BinaryGroupByMut,
-    BinaryGroupByKeyMut,
     BinaryGroupMut,
 };
+
+#[cfg(feature = "std")]
+pub use self::binary_group::{
+    BinaryGroupByKey,
+    BinaryGroupByKeyMut,
+};
+
 pub use self::exponential_group::{
-    ExponentialGroupByKey,
     ExponentialGroupBy,
     ExponentialGroup,
-    ExponentialGroupByKeyMut,
     ExponentialGroupByMut,
     ExponentialGroupMut,
 };
+
+#[cfg(feature = "std")]
+pub use self::exponential_group::{
+    ExponentialGroupByKey,
+    ExponentialGroupByKeyMut,
+};
+
 pub use self::linear_str_group::{
-    LinearStrGroupByKey,
     LinearStrGroupBy,
     LinearStrGroup,
-    LinearStrGroupByKeyMut,
     LinearStrGroupByMut,
     LinearStrGroupMut,
+};
+
+#[cfg(feature = "std")]
+pub use self::linear_str_group::{
+    LinearStrGroupByKey,
+    LinearStrGroupByKeyMut,
 };
 
 #[cfg(feature = "nightly")]
@@ -303,6 +322,7 @@ where F: FnMut(&T) -> B,
 /// defined by a predicate.
 pub trait GroupBy<T>
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
@@ -318,6 +338,7 @@ pub trait GroupBy<T>
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
 
+    #[cfg(feature = "std")]
     fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
@@ -339,6 +360,7 @@ pub trait GroupBy<T>
     fn binary_group(&self) -> BinaryGroup<T>
     where T: PartialEq;
 
+    #[cfg(feature = "std")]
     fn exponential_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> ExponentialGroupByKey<'a, T>
     where P: Fn(&T) -> K + Copy,
           K: PartialEq;
@@ -365,6 +387,7 @@ pub trait GroupBy<T>
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
@@ -380,6 +403,7 @@ pub trait GroupByMut<T>
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
 
+    #[cfg(feature = "std")]
     fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
@@ -401,6 +425,7 @@ pub trait GroupByMut<T>
     fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
     where T: PartialEq;
 
+    #[cfg(feature = "std")]
     fn exponential_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> ExponentialGroupByKeyMut<'a, T>
     where P: Fn(&T) -> K + Copy,
           K: PartialEq;
@@ -425,6 +450,7 @@ pub trait GroupByMut<T>
 
 impl<T> GroupBy<T> for [T]
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq
@@ -444,6 +470,7 @@ impl<T> GroupBy<T> for [T]
         LinearGroup::new(self)
     }
 
+    #[cfg(feature = "std")]
     fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq
@@ -463,6 +490,7 @@ impl<T> GroupBy<T> for [T]
         BinaryGroup::new(self)
     }
 
+    #[cfg(feature = "std")]
     fn exponential_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> ExponentialGroupByKey<'a, T>
     where P: Fn(&T) -> K + Copy,
           K: PartialEq
@@ -485,6 +513,7 @@ impl<T> GroupBy<T> for [T]
 
 impl<T> GroupByMut<T> for [T]
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq
@@ -504,6 +533,7 @@ impl<T> GroupByMut<T> for [T]
         LinearGroupMut::new(self)
     }
 
+    #[cfg(feature = "std")]
     fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
     where P: FnMut(&T) -> K + Copy,
           K: PartialEq
@@ -523,6 +553,7 @@ impl<T> GroupByMut<T> for [T]
         BinaryGroupMut::new(self)
     }
 
+    #[cfg(feature = "std")]
     fn exponential_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> ExponentialGroupByKeyMut<'a, T>
     where P: Fn(&T) -> K + Copy,
           K: PartialEq
@@ -547,6 +578,7 @@ impl<T> GroupByMut<T> for [T]
 /// defined by a predicate.
 pub trait StrGroupBy
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
     where P: FnMut(char) -> K + Copy,
           K: PartialEq;
@@ -566,6 +598,7 @@ pub trait StrGroupBy
 /// defined by a predicate.
 pub trait StrGroupByMut
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
     where P: FnMut(char) -> K + Copy,
           K: PartialEq;
@@ -583,6 +616,7 @@ pub trait StrGroupByMut
 
 impl StrGroupBy for str
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
     where P: FnMut(char) -> K + Copy,
           K: PartialEq
@@ -603,6 +637,7 @@ impl StrGroupBy for str
 
 impl StrGroupByMut for str
 {
+    #[cfg(feature = "std")]
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
     where P: FnMut(char) -> K + Copy,
           K: PartialEq

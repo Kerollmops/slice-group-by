@@ -43,10 +43,14 @@ macro_rules! str_group_by_wrapped {
 
 mod linear_str_group;
 mod linear_str_group_by;
+
+#[cfg(feature = "std")]
 mod linear_str_group_by_key;
 
 pub use self::linear_str_group::{LinearStrGroup, LinearStrGroupMut};
 pub use self::linear_str_group_by::{LinearStrGroupBy, LinearStrGroupByMut};
+
+#[cfg(feature = "std")]
 pub use self::linear_str_group_by_key::{LinearStrGroupByKey, LinearStrGroupByKeyMut};
 
 #[cfg(test)]

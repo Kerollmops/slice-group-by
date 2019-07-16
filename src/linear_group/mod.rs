@@ -1,9 +1,13 @@
 mod linear_group;
 mod linear_group_by;
+
+#[cfg(feature = "std")]
 mod linear_group_by_key;
 
 pub use self::linear_group::{LinearGroup, LinearGroupMut};
 pub use self::linear_group_by::{LinearGroupBy, LinearGroupByMut};
+
+#[cfg(feature = "std")]
 pub use self::linear_group_by_key::{LinearGroupByKey, LinearGroupByKeyMut};
 
 #[cfg(test)]
