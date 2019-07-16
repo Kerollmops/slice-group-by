@@ -1,13 +1,9 @@
 mod binary_group;
 mod binary_group_by;
-
-#[cfg(feature = "std")]
 mod binary_group_by_key;
 
 pub use self::binary_group::{BinaryGroup, BinaryGroupMut};
 pub use self::binary_group_by::{BinaryGroupBy, BinaryGroupByMut};
-
-#[cfg(feature = "std")]
 pub use self::binary_group_by_key::{BinaryGroupByKey, BinaryGroupByKeyMut};
 
 #[cfg(test)]

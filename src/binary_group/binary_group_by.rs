@@ -91,9 +91,7 @@ pub struct BinaryGroupBy<'a, T, P> {
     _phantom: marker::PhantomData<&'a T>,
 }
 
-impl<'a, T: 'a, P> BinaryGroupBy<'a, T, P>
-where P: FnMut(&T, &T) -> bool,
-{
+impl<'a, T: 'a, P> BinaryGroupBy<'a, T, P> {
     pub fn new(slice: &'a [T], predicate: P) -> Self {
         BinaryGroupBy {
             ptr: slice.as_ptr(),
@@ -132,7 +130,7 @@ pub struct BinaryGroupByMut<'a, T, P> {
     ptr: *mut T,
     end: *mut T,
     predicate: P,
-    _phantom: marker::PhantomData<&'a T>,
+    _phantom: marker::PhantomData<&'a mut T>,
 }
 
 impl<'a, T: 'a, P> BinaryGroupByMut<'a, T, P>

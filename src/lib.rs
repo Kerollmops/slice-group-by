@@ -140,16 +140,12 @@ mod linear_str_group;
 use std::cmp::{self, Ordering};
 
 pub use self::linear_group::{
+    LinearGroupByKey,
     LinearGroupBy,
     LinearGroup,
+    LinearGroupByKeyMut,
     LinearGroupByMut,
     LinearGroupMut,
-};
-
-#[cfg(feature = "std")]
-pub use self::linear_group::{
-    LinearGroupByKey,
-    LinearGroupByKeyMut,
 };
 
 pub use self::binary_group::{
@@ -322,9 +318,8 @@ where F: FnMut(&T) -> B,
 /// defined by a predicate.
 pub trait GroupBy<T>
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn linear_group_by_key<'a, F, K>(&'a self, func: F) -> LinearGroupByKey<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq;
 
     /// Returns an iterator on slice groups using the *linear search* method.
@@ -387,9 +382,8 @@ pub trait GroupBy<T>
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn linear_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> LinearGroupByKeyMut<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *linear search* method.
@@ -450,12 +444,11 @@ pub trait GroupByMut<T>
 
 impl<T> GroupBy<T> for [T]
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn linear_group_by_key<'a, F, K>(&'a self, func: F) -> LinearGroupByKey<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq
     {
-        LinearGroupByKey::new(self, predicate)
+        LinearGroupByKey::new(self, func)
     }
 
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
@@ -513,12 +506,11 @@ impl<T> GroupBy<T> for [T]
 
 impl<T> GroupByMut<T> for [T]
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn linear_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> LinearGroupByKeyMut<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq
     {
-        LinearGroupByKeyMut::new(self, predicate)
+        LinearGroupByKeyMut::new(self, func)
     }
 
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
