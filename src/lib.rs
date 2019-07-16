@@ -167,16 +167,12 @@ pub use self::exponential_group::{
 };
 
 pub use self::linear_str_group::{
+    LinearStrGroupByKey,
     LinearStrGroupBy,
     LinearStrGroup,
+    LinearStrGroupByKeyMut,
     LinearStrGroupByMut,
     LinearStrGroupMut,
-};
-
-#[cfg(feature = "std")]
-pub use self::linear_str_group::{
-    LinearStrGroupByKey,
-    LinearStrGroupByKeyMut,
 };
 
 #[cfg(feature = "nightly")]
@@ -554,9 +550,8 @@ impl<T> GroupByMut<T> for [T]
 /// defined by a predicate.
 pub trait StrGroupBy
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
-    where P: FnMut(char) -> K + Copy,
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearStrGroupByKey<F>
+    where F: FnMut(char) -> K,
           K: PartialEq;
 
     /// Returns an iterator on `str` groups using the *linear search* method.
@@ -574,9 +569,8 @@ pub trait StrGroupBy
 /// defined by a predicate.
 pub trait StrGroupByMut
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
-    where P: FnMut(char) -> K + Copy,
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearStrGroupByKeyMut<F>
+    where F: FnMut(char) -> K,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* `str` groups using the *linear search* method.
@@ -592,12 +586,11 @@ pub trait StrGroupByMut
 
 impl StrGroupBy for str
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
-    where P: FnMut(char) -> K + Copy,
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearStrGroupByKey<F>
+    where F: FnMut(char) -> K,
           K: PartialEq
     {
-        LinearStrGroupByKey::new(self, predicate)
+        LinearStrGroupByKey::new(self, func)
     }
 
     fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
@@ -613,12 +606,11 @@ impl StrGroupBy for str
 
 impl StrGroupByMut for str
 {
-    #[cfg(feature = "std")]
-    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
-    where P: FnMut(char) -> K + Copy,
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearStrGroupByKeyMut<F>
+    where F: FnMut(char) -> K,
           K: PartialEq
     {
-        LinearStrGroupByKeyMut::new(self, predicate)
+        LinearStrGroupByKeyMut::new(self, func)
     }
 
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>

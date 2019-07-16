@@ -43,15 +43,29 @@ macro_rules! str_group_by_wrapped {
 
 mod linear_str_group;
 mod linear_str_group_by;
-
-#[cfg(feature = "std")]
 mod linear_str_group_by_key;
 
 pub use self::linear_str_group::{LinearStrGroup, LinearStrGroupMut};
 pub use self::linear_str_group_by::{LinearStrGroupBy, LinearStrGroupByMut};
-
-#[cfg(feature = "std")]
 pub use self::linear_str_group_by_key::{LinearStrGroupByKey, LinearStrGroupByKeyMut};
+
+fn str_as_ptr(string: &str) -> *const u8 {
+    string.as_bytes().as_ptr()
+}
+
+fn str_as_mut_ptr(string: &mut str) -> *mut u8 {
+    unsafe { string.as_bytes_mut().as_mut_ptr() }
+}
+
+unsafe fn str_from_raw_parts<'a>(data: *const u8, len: usize) -> &'a str {
+    let slice = std::slice::from_raw_parts(data, len);
+    std::str::from_utf8_unchecked(slice)
+}
+
+unsafe fn str_from_raw_parts_mut<'a>(data: *mut u8, len: usize) -> &'a mut str {
+    let slice = std::slice::from_raw_parts_mut(data, len);
+    std::str::from_utf8_unchecked_mut(slice)
+}
 
 #[cfg(test)]
 mod tests {

@@ -3,7 +3,7 @@ use std::cmp::Ordering::{Less, Greater};
 use std::{fmt, marker};
 use crate::{exponential_search_by, offset_from};
 
-macro_rules! exponential_group_by {
+macro_rules! exponential_group_by_key {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
         impl<'a, T: 'a, F> $name<'a, T, F> {
             #[inline]
@@ -116,7 +116,7 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKey<'a, T, F> {
     }
 }
 
-exponential_group_by!{ struct ExponentialGroupByKey, &'a [T], from_raw_parts }
+exponential_group_by_key!{ struct ExponentialGroupByKey, &'a [T], from_raw_parts }
 
 pub struct ExponentialGroupByKeyMut<'a, T, F> {
     ptr: *mut T,
@@ -156,4 +156,4 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKeyMut<'a, T, F
     }
 }
 
-exponential_group_by!{ struct ExponentialGroupByKeyMut, &'a mut [T], from_raw_parts_mut }
+exponential_group_by_key!{ struct ExponentialGroupByKeyMut, &'a mut [T], from_raw_parts_mut }
