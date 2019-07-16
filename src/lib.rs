@@ -135,7 +135,7 @@ macro_rules! group_by_wrapped {
 mod linear_group;
 mod binary_group;
 mod exponential_group;
-mod linear_str_group_by;
+mod linear_str_group;
 
 use std::cmp::{self, Ordering};
 
@@ -163,9 +163,11 @@ pub use self::exponential_group::{
     ExponentialGroupByMut,
     ExponentialGroupMut,
 };
-pub use self::linear_str_group_by::{
+pub use self::linear_str_group::{
+    LinearStrGroupByKey,
     LinearStrGroupBy,
     LinearStrGroup,
+    LinearStrGroupByKeyMut,
     LinearStrGroupByMut,
     LinearStrGroupMut,
 };
@@ -545,6 +547,10 @@ impl<T> GroupByMut<T> for [T]
 /// defined by a predicate.
 pub trait StrGroupBy
 {
+    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
+    where P: Fn(char) -> K + Copy,
+          K: PartialEq;
+
     /// Returns an iterator on `str` groups using the *linear search* method.
     fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
     where P: FnMut(char, char) -> bool;
@@ -560,6 +566,10 @@ pub trait StrGroupBy
 /// defined by a predicate.
 pub trait StrGroupByMut
 {
+    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
+    where P: Fn(char) -> K + Copy,
+          K: PartialEq;
+
     /// Returns an iterator on *mutable* `str` groups using the *linear search* method.
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>
     where P: FnMut(char, char) -> bool;
@@ -573,6 +583,13 @@ pub trait StrGroupByMut
 
 impl StrGroupBy for str
 {
+    fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
+    where P: Fn(char) -> K + Copy,
+          K: PartialEq
+    {
+        LinearStrGroupByKey::new(self, predicate)
+    }
+
     fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
     where P: FnMut(char, char) -> bool,
     {
@@ -586,6 +603,13 @@ impl StrGroupBy for str
 
 impl StrGroupByMut for str
 {
+    fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
+    where P: Fn(char) -> K + Copy,
+          K: PartialEq
+    {
+        LinearStrGroupByKeyMut::new(self, predicate)
+    }
+
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>
     where P: FnMut(char, char) -> bool,
     {
