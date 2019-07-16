@@ -1,13 +1,9 @@
 mod exponential_group;
 mod exponential_group_by;
-
-#[cfg(feature = "std")]
 mod exponential_group_by_key;
 
 pub use self::exponential_group::{ExponentialGroup, ExponentialGroupMut};
 pub use self::exponential_group_by::{ExponentialGroupBy, ExponentialGroupByMut};
-
-#[cfg(feature = "std")]
 pub use self::exponential_group_by_key::{ExponentialGroupByKey, ExponentialGroupByKeyMut};
 
 #[cfg(test)]

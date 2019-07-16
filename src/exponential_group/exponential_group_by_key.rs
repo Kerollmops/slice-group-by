@@ -1,37 +1,159 @@
-use crate::{ExponentialGroupBy, ExponentialGroupByMut};
+use std::slice::{from_raw_parts, from_raw_parts_mut};
+use std::cmp::Ordering::{Less, Greater};
+use std::{fmt, marker};
+use crate::{exponential_search_by, offset_from};
 
-pub struct ExponentialGroupByKey<'a, T: 'a>(ExponentialGroupBy<'a, T, Box<dyn FnMut(&T, &T) -> bool + 'a>>);
+macro_rules! exponential_group_by {
+    (struct $name:ident, $elem:ty, $mkslice:ident) => {
+        impl<'a, T: 'a, F> $name<'a, T, F> {
+            #[inline]
+            pub fn is_empty(&self) -> bool {
+                self.ptr == self.end
+            }
 
-impl<'a, T> ExponentialGroupByKey<'a, T> {
-    pub fn new<F: 'a, K>(slice: &'a [T], mut f: F) -> Self
-    where F: FnMut(&T) -> K + Copy,
-          K: PartialEq,
-    {
-        let predicate = Box::new(move |a: &T, b: &T| f(a) == f(b));
-        ExponentialGroupByKey(ExponentialGroupBy::new(slice, predicate))
+            #[inline]
+            pub fn remainder_len(&self) -> usize {
+                unsafe { offset_from(self.end, self.ptr) }
+            }
+        }
+
+        impl<'a, T: 'a, F, K> std::iter::Iterator for $name<'a, T, F>
+        where F: FnMut(&T) -> K,
+              K: PartialEq
+        {
+            type Item = $elem;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.is_empty() { return None }
+
+                let first = unsafe { &*self.ptr };
+
+                let len = self.remainder_len();
+                let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
+
+                let predicate = |x: &T| if (self.func)(first) == (self.func)(x) { Less } else { Greater };
+                let index = exponential_search_by(tail, predicate).unwrap_err();
+
+                let left = unsafe { $mkslice(self.ptr, index + 1) };
+                self.ptr = unsafe { self.ptr.add(index + 1) };
+
+                Some(left)
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                if self.is_empty() { return (0, Some(0)) }
+
+                let len = self.remainder_len();
+                (1, Some(len))
+            }
+
+            fn last(mut self) -> Option<Self::Item> {
+                self.next_back()
+            }
+        }
+
+        impl<'a, T: 'a, F, K> std::iter::DoubleEndedIterator for $name<'a, T, F>
+        where F: FnMut(&T) -> K,
+              K: PartialEq
+        {
+            fn next_back(&mut self) -> Option<Self::Item> {
+                if self.is_empty() { return None }
+
+                let last = unsafe { &*self.end.sub(1) };
+
+                let len = self.remainder_len();
+                let head = unsafe { $mkslice(self.ptr, len - 1) };
+
+                let predicate = |x: &T| if (self.func)(last) == (self.func)(x) { Greater } else { Less };
+                let index = exponential_search_by(head, predicate).unwrap_err();
+
+                let right = unsafe { $mkslice(self.ptr.add(index), len - index) };
+                self.end = unsafe { self.end.sub(len - index) };
+
+                Some(right)
+            }
+        }
+
+        impl<'a, T: 'a, F, K> std::iter::FusedIterator for $name<'a, T, F>
+        where F: FnMut(&T) -> K,
+              K: PartialEq
+        { }
     }
 }
 
-impl<'a, T: 'a> ExponentialGroupByKey<'a, T> {
+pub struct ExponentialGroupByKey<'a, T, F> {
+    ptr: *const T,
+    end: *const T,
+    func: F,
+    _phantom: marker::PhantomData<&'a T>,
+}
+
+impl<'a, T: 'a, F> ExponentialGroupByKey<'a, T, F> {
+    pub fn new(slice: &'a [T], func: F) -> Self {
+        ExponentialGroupByKey {
+            ptr: slice.as_ptr(),
+            end: unsafe { slice.as_ptr().add(slice.len()) },
+            func,
+            _phantom: marker::PhantomData,
+        }
+    }
+}
+
+impl<'a, T: 'a, F> ExponentialGroupByKey<'a, T, F> {
     /// Returns the remainder of the original slice that is going to be
     /// returned by the iterator.
     pub fn remainder(&self) -> &[T] {
-        self.0.remainder()
+        let len = self.remainder_len();
+        unsafe { from_raw_parts(self.ptr, len) }
     }
 }
 
-group_by_wrapped!{ struct ExponentialGroupByKey, &'a [T] }
-
-pub struct ExponentialGroupByKeyMut<'a, T: 'a>(ExponentialGroupByMut<'a, T, Box<dyn FnMut(&T, &T) -> bool + 'a>>);
-
-impl<'a, T> ExponentialGroupByKeyMut<'a, T> {
-    pub fn new<F: 'a, K>(slice: &'a mut [T], mut f: F) -> Self
-    where F: FnMut(&T) -> K + Copy,
-          K: PartialEq,
-    {
-        let predicate = Box::new(move |a: &T, b: &T| f(a) == f(b));
-        ExponentialGroupByKeyMut(ExponentialGroupByMut::new(slice, predicate))
+impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKey<'a, T, F> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ExponentialGroupByKey")
+            .field("remainder", &self.remainder())
+            .finish()
     }
 }
 
-group_by_wrapped!{ struct ExponentialGroupByKeyMut, &'a mut [T] }
+exponential_group_by!{ struct ExponentialGroupByKey, &'a [T], from_raw_parts }
+
+pub struct ExponentialGroupByKeyMut<'a, T, F> {
+    ptr: *mut T,
+    end: *mut T,
+    func: F,
+    _phantom: marker::PhantomData<&'a mut T>,
+}
+
+impl<'a, T: 'a, F> ExponentialGroupByKeyMut<'a, T, F> {
+    pub fn new(slice: &'a mut [T], func: F) -> Self {
+        ExponentialGroupByKeyMut {
+            ptr: slice.as_mut_ptr(),
+            end: unsafe { slice.as_mut_ptr().add(slice.len()) },
+            func,
+            _phantom: marker::PhantomData,
+        }
+    }
+}
+
+impl<'a, T: 'a, F> ExponentialGroupByKeyMut<'a, T, F> {
+    /// Returns the remainder of the original slice that is going to be
+    /// returned by the iterator.
+    pub fn into_remainder(self) -> &'a mut [T] {
+        let len = self.remainder_len();
+        unsafe { from_raw_parts_mut(self.ptr, len) }
+    }
+}
+
+impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKeyMut<'a, T, F> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let len = self.remainder_len();
+        let remainder = unsafe { from_raw_parts(self.ptr, len) };
+
+        f.debug_struct("ExponentialGroupByKeyMut")
+            .field("remaining", &remainder)
+            .finish()
+    }
+}
+
+exponential_group_by!{ struct ExponentialGroupByKeyMut, &'a mut [T], from_raw_parts_mut }

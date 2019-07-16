@@ -158,16 +158,12 @@ pub use self::binary_group::{
 };
 
 pub use self::exponential_group::{
+    ExponentialGroupByKey,
     ExponentialGroupBy,
     ExponentialGroup,
+    ExponentialGroupByKeyMut,
     ExponentialGroupByMut,
     ExponentialGroupMut,
-};
-
-#[cfg(feature = "std")]
-pub use self::exponential_group::{
-    ExponentialGroupByKey,
-    ExponentialGroupByKeyMut,
 };
 
 pub use self::linear_str_group::{
@@ -314,7 +310,7 @@ where F: FnMut(&T) -> B,
 /// defined by a predicate.
 pub trait GroupBy<T>
 {
-    fn linear_group_by_key<'a, F, K>(&'a self, func: F) -> LinearGroupByKey<'a, T, F>
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearGroupByKey<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
 
@@ -329,7 +325,7 @@ pub trait GroupBy<T>
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
 
-    fn binary_group_by_key<'a, F, K>(&'a self, func: F) -> BinaryGroupByKey<'a, T, F>
+    fn binary_group_by_key<F, K>(&self, func: F) -> BinaryGroupByKey<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
 
@@ -350,9 +346,8 @@ pub trait GroupBy<T>
     fn binary_group(&self) -> BinaryGroup<T>
     where T: PartialEq;
 
-    #[cfg(feature = "std")]
-    fn exponential_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> ExponentialGroupByKey<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    fn exponential_group_by_key<F, K>(&self, func: F) -> ExponentialGroupByKey<T, F>
+    where F: Fn(&T) -> K,
           K: PartialEq;
 
     /// Returns an iterator on slice groups using the *exponential search* method.
@@ -377,7 +372,7 @@ pub trait GroupBy<T>
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
-    fn linear_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> LinearGroupByKeyMut<'a, T, F>
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearGroupByKeyMut<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
 
@@ -392,7 +387,7 @@ pub trait GroupByMut<T>
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
 
-    fn binary_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> BinaryGroupByKeyMut<'a, T, F>
+    fn binary_group_by_key_mut<F, K>(&mut self, func: F) -> BinaryGroupByKeyMut<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
 
@@ -413,9 +408,8 @@ pub trait GroupByMut<T>
     fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
     where T: PartialEq;
 
-    #[cfg(feature = "std")]
-    fn exponential_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> ExponentialGroupByKeyMut<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    fn exponential_group_by_key_mut<F, K>(&mut self, func: F) -> ExponentialGroupByKeyMut<T, F>
+    where F: Fn(&T) -> K,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *exponential search* method.
@@ -438,7 +432,7 @@ pub trait GroupByMut<T>
 
 impl<T> GroupBy<T> for [T]
 {
-    fn linear_group_by_key<'a, F, K>(&'a self, func: F) -> LinearGroupByKey<'a, T, F>
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearGroupByKey<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq
     {
@@ -457,7 +451,7 @@ impl<T> GroupBy<T> for [T]
         LinearGroup::new(self)
     }
 
-    fn binary_group_by_key<'a, F, K>(&'a self, func: F) -> BinaryGroupByKey<'a, T, F>
+    fn binary_group_by_key<F, K>(&self, func: F) -> BinaryGroupByKey<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq
     {
@@ -476,12 +470,11 @@ impl<T> GroupBy<T> for [T]
         BinaryGroup::new(self)
     }
 
-    #[cfg(feature = "std")]
-    fn exponential_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> ExponentialGroupByKey<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    fn exponential_group_by_key<F, K>(&self, func: F) -> ExponentialGroupByKey<T, F>
+    where F: Fn(&T) -> K,
           K: PartialEq
     {
-        ExponentialGroupByKey::new(self, predicate)
+        ExponentialGroupByKey::new(self, func)
     }
 
     fn exponential_group_by<P>(&self, predicate: P) -> ExponentialGroupBy<T, P>
@@ -499,7 +492,7 @@ impl<T> GroupBy<T> for [T]
 
 impl<T> GroupByMut<T> for [T]
 {
-    fn linear_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> LinearGroupByKeyMut<'a, T, F>
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearGroupByKeyMut<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq
     {
@@ -518,7 +511,7 @@ impl<T> GroupByMut<T> for [T]
         LinearGroupMut::new(self)
     }
 
-    fn binary_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> BinaryGroupByKeyMut<'a, T, F>
+    fn binary_group_by_key_mut<F, K>(&mut self, func: F) -> BinaryGroupByKeyMut<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq
     {
@@ -537,12 +530,11 @@ impl<T> GroupByMut<T> for [T]
         BinaryGroupMut::new(self)
     }
 
-    #[cfg(feature = "std")]
-    fn exponential_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> ExponentialGroupByKeyMut<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    fn exponential_group_by_key_mut<F, K>(&mut self, func: F) -> ExponentialGroupByKeyMut<T, F>
+    where F: Fn(&T) -> K,
           K: PartialEq
     {
-        ExponentialGroupByKeyMut::new(self, predicate)
+        ExponentialGroupByKeyMut::new(self, func)
     }
 
     fn exponential_group_by_mut<P>(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>

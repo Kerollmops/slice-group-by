@@ -130,7 +130,7 @@ pub struct ExponentialGroupByMut<'a, T, P> {
     ptr: *mut T,
     end: *mut T,
     predicate: P,
-    _phantom: marker::PhantomData<&'a T>,
+    _phantom: marker::PhantomData<&'a mut T>,
 }
 
 impl<'a, T: 'a, P> ExponentialGroupByMut<'a, T, P>
