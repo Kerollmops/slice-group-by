@@ -304,7 +304,7 @@ where F: FnMut(&T) -> B,
 pub trait GroupBy<T>
 {
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
 
     /// Returns an iterator on slice groups using the *linear search* method.
@@ -319,7 +319,7 @@ pub trait GroupBy<T>
     where T: PartialEq;
 
     fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
 
     /// Returns an iterator on slice groups using the *binary search* method.
@@ -366,7 +366,7 @@ pub trait GroupBy<T>
 pub trait GroupByMut<T>
 {
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *linear search* method.
@@ -381,7 +381,7 @@ pub trait GroupByMut<T>
     where T: PartialEq;
 
     fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *binary search* method.
@@ -426,7 +426,7 @@ pub trait GroupByMut<T>
 impl<T> GroupBy<T> for [T]
 {
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearGroupByKey<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq
     {
         LinearGroupByKey::new(self, predicate)
@@ -445,7 +445,7 @@ impl<T> GroupBy<T> for [T]
     }
 
     fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq
     {
         BinaryGroupByKey::new(self, predicate)
@@ -486,7 +486,7 @@ impl<T> GroupBy<T> for [T]
 impl<T> GroupByMut<T> for [T]
 {
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearGroupByKeyMut<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq
     {
         LinearGroupByKeyMut::new(self, predicate)
@@ -505,7 +505,7 @@ impl<T> GroupByMut<T> for [T]
     }
 
     fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
-    where P: Fn(&T) -> K + Copy,
+    where P: FnMut(&T) -> K + Copy,
           K: PartialEq
     {
         BinaryGroupByKeyMut::new(self, predicate)
@@ -548,7 +548,7 @@ impl<T> GroupByMut<T> for [T]
 pub trait StrGroupBy
 {
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
-    where P: Fn(char) -> K + Copy,
+    where P: FnMut(char) -> K + Copy,
           K: PartialEq;
 
     /// Returns an iterator on `str` groups using the *linear search* method.
@@ -567,7 +567,7 @@ pub trait StrGroupBy
 pub trait StrGroupByMut
 {
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
-    where P: Fn(char) -> K + Copy,
+    where P: FnMut(char) -> K + Copy,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* `str` groups using the *linear search* method.
@@ -584,7 +584,7 @@ pub trait StrGroupByMut
 impl StrGroupBy for str
 {
     fn linear_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> LinearStrGroupByKey<'a>
-    where P: Fn(char) -> K + Copy,
+    where P: FnMut(char) -> K + Copy,
           K: PartialEq
     {
         LinearStrGroupByKey::new(self, predicate)
@@ -604,7 +604,7 @@ impl StrGroupBy for str
 impl StrGroupByMut for str
 {
     fn linear_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> LinearStrGroupByKeyMut<'a>
-    where P: Fn(char) -> K + Copy,
+    where P: FnMut(char) -> K + Copy,
           K: PartialEq
     {
         LinearStrGroupByKeyMut::new(self, predicate)
