@@ -133,7 +133,7 @@ macro_rules! group_by_wrapped {
 }
 
 mod linear_group;
-mod binary_group_by;
+mod binary_group;
 mod exponential_group_by;
 mod linear_str_group_by;
 
@@ -147,10 +147,12 @@ pub use self::linear_group::{
     LinearGroupByMut,
     LinearGroupMut,
 };
-pub use self::binary_group_by::{
+pub use self::binary_group::{
+    BinaryGroupByKey,
     BinaryGroupBy,
     BinaryGroup,
     BinaryGroupByMut,
+    BinaryGroupByKeyMut,
     BinaryGroupMut,
 };
 pub use self::exponential_group_by::{
@@ -312,6 +314,10 @@ pub trait GroupBy<T>
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
 
+    fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq;
+
     /// Returns an iterator on slice groups using the *binary search* method.
     ///
     /// The predicate function should implement an order consistent with
@@ -365,6 +371,10 @@ pub trait GroupByMut<T>
     /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
+
+    fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *binary search* method.
     ///
@@ -422,6 +432,13 @@ impl<T> GroupBy<T> for [T]
         LinearGroup::new(self)
     }
 
+    fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq
+    {
+        BinaryGroupByKey::new(self, predicate)
+    }
+
     fn binary_group_by<P>(&self, predicate: P) -> BinaryGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -466,6 +483,13 @@ impl<T> GroupByMut<T> for [T]
     where T: PartialEq,
     {
         LinearGroupMut::new(self)
+    }
+
+    fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq
+    {
+        BinaryGroupByKeyMut::new(self, predicate)
     }
 
     fn binary_group_by_mut<P>(&mut self, predicate: P) -> BinaryGroupByMut<T, P>
