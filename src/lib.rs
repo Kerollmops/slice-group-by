@@ -149,16 +149,12 @@ pub use self::linear_group::{
 };
 
 pub use self::binary_group::{
+    BinaryGroupByKey,
     BinaryGroupBy,
     BinaryGroup,
+    BinaryGroupByKeyMut,
     BinaryGroupByMut,
     BinaryGroupMut,
-};
-
-#[cfg(feature = "std")]
-pub use self::binary_group::{
-    BinaryGroupByKey,
-    BinaryGroupByKeyMut,
 };
 
 pub use self::exponential_group::{
@@ -333,9 +329,8 @@ pub trait GroupBy<T>
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
 
-    #[cfg(feature = "std")]
-    fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn binary_group_by_key<'a, F, K>(&'a self, func: F) -> BinaryGroupByKey<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq;
 
     /// Returns an iterator on slice groups using the *binary search* method.
@@ -397,9 +392,8 @@ pub trait GroupByMut<T>
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
 
-    #[cfg(feature = "std")]
-    fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn binary_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> BinaryGroupByKeyMut<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *binary search* method.
@@ -463,12 +457,11 @@ impl<T> GroupBy<T> for [T]
         LinearGroup::new(self)
     }
 
-    #[cfg(feature = "std")]
-    fn binary_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> BinaryGroupByKey<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn binary_group_by_key<'a, F, K>(&'a self, func: F) -> BinaryGroupByKey<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq
     {
-        BinaryGroupByKey::new(self, predicate)
+        BinaryGroupByKey::new(self, func)
     }
 
     fn binary_group_by<P>(&self, predicate: P) -> BinaryGroupBy<T, P>
@@ -525,12 +518,11 @@ impl<T> GroupByMut<T> for [T]
         LinearGroupMut::new(self)
     }
 
-    #[cfg(feature = "std")]
-    fn binary_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> BinaryGroupByKeyMut<'a, T>
-    where P: FnMut(&T) -> K + Copy,
+    fn binary_group_by_key_mut<'a, F, K>(&'a mut self, func: F) -> BinaryGroupByKeyMut<'a, T, F>
+    where F: FnMut(&T) -> K,
           K: PartialEq
     {
-        BinaryGroupByKeyMut::new(self, predicate)
+        BinaryGroupByKeyMut::new(self, func)
     }
 
     fn binary_group_by_mut<P>(&mut self, predicate: P) -> BinaryGroupByMut<T, P>
