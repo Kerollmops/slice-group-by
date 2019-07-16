@@ -114,10 +114,7 @@ pub struct LinearStrGroupBy<'a, P> {
 
 impl<'a, P> LinearStrGroupBy<'a, P> {
     pub fn new(string: &'a str, predicate: P) -> Self {
-        Self {
-            inner: string,
-            predicate: predicate,
-        }
+        Self { inner: string, predicate }
     }
 }
 
@@ -135,10 +132,7 @@ pub struct LinearStrGroupByMut<'a, P> {
 
 impl<'a, P> LinearStrGroupByMut<'a, P> {
     pub fn new(string: &'a mut str, predicate: P) -> Self {
-        Self {
-            inner: string,
-            predicate: predicate,
-        }
+        Self { inner: string, predicate }
     }
 
     #[inline]

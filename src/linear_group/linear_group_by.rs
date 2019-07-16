@@ -142,7 +142,7 @@ where P: FnMut(&T, &T) -> bool,
         Self {
             ptr: slice.as_ptr(),
             end: unsafe { slice.as_ptr().add(slice.len()) },
-            predicate: predicate,
+            predicate,
             _phantom: marker::PhantomData,
         }
     }
@@ -186,7 +186,7 @@ where P: FnMut(&T, &T) -> bool,
         Self {
             ptr: slice.as_mut_ptr(),
             end: unsafe { slice.as_mut_ptr().add(slice.len()) },
-            predicate: predicate,
+            predicate,
             _phantom: marker::PhantomData,
         }
     }

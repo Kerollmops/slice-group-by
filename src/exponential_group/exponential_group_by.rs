@@ -96,7 +96,7 @@ where P: FnMut(&T, &T) -> bool,
         ExponentialGroupBy {
             ptr: slice.as_ptr(),
             end: unsafe { slice.as_ptr().add(slice.len()) },
-            predicate: predicate,
+            predicate,
             _phantom: marker::PhantomData,
         }
     }
@@ -140,7 +140,7 @@ where P: FnMut(&T, &T) -> bool,
         ExponentialGroupByMut {
             ptr: slice.as_mut_ptr(),
             end: unsafe { slice.as_mut_ptr().add(slice.len()) },
-            predicate: predicate,
+            predicate,
             _phantom: marker::PhantomData,
         }
     }
