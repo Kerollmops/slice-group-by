@@ -134,7 +134,7 @@ macro_rules! group_by_wrapped {
 
 mod linear_group;
 mod binary_group;
-mod exponential_group_by;
+mod exponential_group;
 mod linear_str_group_by;
 
 use std::cmp::{self, Ordering};
@@ -155,9 +155,11 @@ pub use self::binary_group::{
     BinaryGroupByKeyMut,
     BinaryGroupMut,
 };
-pub use self::exponential_group_by::{
+pub use self::exponential_group::{
+    ExponentialGroupByKey,
     ExponentialGroupBy,
     ExponentialGroup,
+    ExponentialGroupByKeyMut,
     ExponentialGroupByMut,
     ExponentialGroupMut,
 };
@@ -335,6 +337,10 @@ pub trait GroupBy<T>
     fn binary_group(&self) -> BinaryGroup<T>
     where T: PartialEq;
 
+    fn exponential_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> ExponentialGroupByKey<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq;
+
     /// Returns an iterator on slice groups using the *exponential search* method.
     ///
     /// The predicate function should implement an order consistent with
@@ -392,6 +398,10 @@ pub trait GroupByMut<T>
     /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
     where T: PartialEq;
+
+    fn exponential_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> ExponentialGroupByKeyMut<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *exponential search* method.
     ///
@@ -451,6 +461,13 @@ impl<T> GroupBy<T> for [T]
         BinaryGroup::new(self)
     }
 
+    fn exponential_group_by_key<'a, P: 'a, K>(&'a self, predicate: P) -> ExponentialGroupByKey<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq
+    {
+        ExponentialGroupByKey::new(self, predicate)
+    }
+
     fn exponential_group_by<P>(&self, predicate: P) -> ExponentialGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -502,6 +519,13 @@ impl<T> GroupByMut<T> for [T]
     where T: PartialEq,
     {
         BinaryGroupMut::new(self)
+    }
+
+    fn exponential_group_by_key_mut<'a, P: 'a, K>(&'a mut self, predicate: P) -> ExponentialGroupByKeyMut<'a, T>
+    where P: Fn(&T) -> K + Copy,
+          K: PartialEq
+    {
+        ExponentialGroupByKeyMut::new(self, predicate)
     }
 
     fn exponential_group_by_mut<P>(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>
