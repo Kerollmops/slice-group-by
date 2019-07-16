@@ -185,7 +185,7 @@ where T: PartialEq,
     }
 }
 
-group_by_partial_eq!{ struct ExponentialGroup, &'a [T] }
+group_by_wrapped!{ struct ExponentialGroup, &'a [T] }
 
 /// An iterator that will return non-overlapping *mutable* groups of equal elements, according to
 /// the [`PartialEq::eq`] function in the slice using *exponential search*.
@@ -204,7 +204,7 @@ where T: PartialEq,
     }
 }
 
-group_by_partial_eq!{ struct ExponentialGroupMut, &'a mut [T] }
+group_by_wrapped!{ struct ExponentialGroupMut, &'a mut [T] }
 
 #[cfg(test)]
 mod tests {

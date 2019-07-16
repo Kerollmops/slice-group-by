@@ -17,7 +17,7 @@ where T: PartialEq,
     }
 }
 
-group_by_partial_eq!{ struct LinearGroup, &'a [T] }
+group_by_wrapped!{ struct LinearGroup, &'a [T] }
 
 /// An iterator that will return non-overlapping *mutable* groups of equal elements
 /// in the slice using *linear/sequential search*.
@@ -36,4 +36,4 @@ where T: PartialEq,
     }
 }
 
-group_by_partial_eq!{ struct LinearGroupMut, &'a mut [T] }
+group_by_wrapped!{ struct LinearGroupMut, &'a mut [T] }

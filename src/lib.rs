@@ -86,7 +86,7 @@
 #[cfg(all(not(test), not(feature = "std")))]
 extern crate core as std;
 
-macro_rules! group_by_partial_eq {
+macro_rules! group_by_wrapped {
     (struct $name:ident, $elem:ty) => {
         impl<'a, T: 'a> $name<'a, T> {
             #[inline]

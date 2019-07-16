@@ -20,7 +20,7 @@ impl<'a, T: 'a> LinearGroupByKey<'a, T> {
     }
 }
 
-group_by_partial_eq!{ struct LinearGroupByKey, &'a [T] }
+group_by_wrapped!{ struct LinearGroupByKey, &'a [T] }
 
 pub struct LinearGroupByKeyMut<'a, T: 'a>(LinearGroupByMut<'a, T, Box<dyn FnMut(&T, &T) -> bool + 'a>>);
 
@@ -34,4 +34,4 @@ impl<'a, T> LinearGroupByKeyMut<'a, T> {
     }
 }
 
-group_by_partial_eq!{ struct LinearGroupByKeyMut, &'a mut [T] }
+group_by_wrapped!{ struct LinearGroupByKeyMut, &'a mut [T] }

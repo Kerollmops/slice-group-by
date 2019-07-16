@@ -187,7 +187,7 @@ where T: PartialEq,
     }
 }
 
-group_by_partial_eq!{ struct BinaryGroup, &'a [T] }
+group_by_wrapped!{ struct BinaryGroup, &'a [T] }
 
 /// An iterator that will return non-overlapping *mutable* groups of equal elements, according to
 /// the [`PartialEq::eq`] function in the slice using *binary search*.
@@ -206,7 +206,7 @@ where T: PartialEq,
     }
 }
 
-group_by_partial_eq!{ struct BinaryGroupMut, &'a mut [T] }
+group_by_wrapped!{ struct BinaryGroupMut, &'a mut [T] }
 
 #[cfg(test)]
 mod tests {
