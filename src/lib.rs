@@ -12,7 +12,7 @@
 //!
 //! let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
 //!
-//! let mut iter = slice.linear_group_by(|a, b| a == b);
+//! let mut iter = slice.linear_group_by_key(|x| -x);
 //!
 //! assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
 //! assert_eq!(iter.next(), Some(&[3, 3][..]));
@@ -306,6 +306,8 @@ where F: FnMut(&T) -> B,
 /// defined by a predicate.
 pub trait GroupBy<T>
 {
+    /// Returns an iterator on slice groups based that will use the given function to generate keys
+    /// and determine groups based on them. It uses *linear search* to iterate over groups.
     fn linear_group_by_key<F, K>(&self, func: F) -> LinearGroupByKey<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
@@ -321,6 +323,11 @@ pub trait GroupBy<T>
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
 
+    /// Returns an iterator on slice groups based that will use the given function to generate keys
+    /// and determine groups based on them. It uses *binary search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
     fn binary_group_by_key<F, K>(&self, func: F) -> BinaryGroupByKey<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
@@ -342,6 +349,11 @@ pub trait GroupBy<T>
     fn binary_group(&self) -> BinaryGroup<T>
     where T: PartialEq;
 
+    /// Returns an iterator on slice groups based that will use the given function to generate keys
+    /// and determine groups based on them. It uses *exponential search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
     fn exponential_group_by_key<F, K>(&self, func: F) -> ExponentialGroupByKey<T, F>
     where F: Fn(&T) -> K,
           K: PartialEq;
@@ -368,6 +380,9 @@ pub trait GroupBy<T>
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
+    /// Returns an iterator on *mutable* slice groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *linear search*
+    /// to iterate over groups.
     fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearGroupByKeyMut<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
@@ -383,6 +398,12 @@ pub trait GroupByMut<T>
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
 
+    /// Returns an iterator on *mutable* slice groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *binary search*
+    /// to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
     fn binary_group_by_key_mut<F, K>(&mut self, func: F) -> BinaryGroupByKeyMut<T, F>
     where F: FnMut(&T) -> K,
           K: PartialEq;
@@ -404,6 +425,12 @@ pub trait GroupByMut<T>
     fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
     where T: PartialEq;
 
+    /// Returns an iterator on *mutable* slice groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *exponential search*
+    /// to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
     fn exponential_group_by_key_mut<F, K>(&mut self, func: F) -> ExponentialGroupByKeyMut<T, F>
     where F: Fn(&T) -> K,
           K: PartialEq;
@@ -550,6 +577,9 @@ impl<T> GroupByMut<T> for [T]
 /// defined by a predicate.
 pub trait StrGroupBy
 {
+    /// Returns an iterator on `str` groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *linear search*
+    /// to iterate over groups.
     fn linear_group_by_key<F, K>(&self, func: F) -> LinearStrGroupByKey<F>
     where F: FnMut(char) -> K,
           K: PartialEq;
@@ -569,6 +599,9 @@ pub trait StrGroupBy
 /// defined by a predicate.
 pub trait StrGroupByMut
 {
+    /// Returns an iterator on *mutable* `str` groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *linear search*
+    /// to iterate over groups.
     fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearStrGroupByKeyMut<F>
     where F: FnMut(char) -> K,
           K: PartialEq;

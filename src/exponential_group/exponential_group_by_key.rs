@@ -81,6 +81,10 @@ macro_rules! exponential_group_by_key {
     }
 }
 
+/// An iterator that will reutrn non-overlapping groups in the slice using *exponential search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct ExponentialGroupByKey<'a, T, F> {
     ptr: *const T,
     end: *const T,
@@ -118,6 +122,11 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKey<'a, T, F> {
 
 exponential_group_by_key!{ struct ExponentialGroupByKey, &'a [T], from_raw_parts }
 
+/// An iterator that will reutrn non-overlapping *mutable* groups
+/// in the slice using *exponential search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct ExponentialGroupByKeyMut<'a, T, F> {
     ptr: *mut T,
     end: *mut T,

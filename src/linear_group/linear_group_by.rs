@@ -126,7 +126,7 @@ macro_rules! group_by {
 /// An iterator that will return non-overlapping groups in the slice
 /// using *linear/sequential search*.
 ///
-/// It will gives two contiguous elements to the predicate function therefore the slice
+/// It will give two contiguous elements to the predicate function therefore the slice
 /// must not be necessarily sorted.
 pub struct LinearGroupBy<'a, T: 'a, P> {
     ptr: *const T,
@@ -170,7 +170,7 @@ group_by!{ struct LinearGroupBy, &'a [T], from_raw_parts }
 /// An iterator that will return non-overlapping *mutable* groups in the slice
 /// using *linear/sequential search*.
 ///
-/// It will gives two contiguous elements to the predicate function therefore the slice
+/// It will give two contiguous elements to the predicate function therefore the slice
 /// must not be necessarily sorted.
 pub struct LinearGroupByMut<'a, T: 'a, P> {
     ptr: *mut T,

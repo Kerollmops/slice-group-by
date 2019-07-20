@@ -89,7 +89,7 @@ macro_rules! str_group_by {
 /// An iterator that will return non-overlapping groups in the `str`
 /// using *linear/sequential search*.
 ///
-/// It will gives two contiguous `char` to the predicate function.
+/// It will give two contiguous `char` to the predicate function.
 pub struct LinearStrGroupBy<'a, P> {
     inner: &'a str,
     predicate: P,
@@ -106,7 +106,7 @@ str_group_by!{ struct LinearStrGroupBy, &'a str, str_as_ptr, str_from_raw_parts 
 /// An iterator that will return non-overlapping *mutable* groups in the `str`
 /// using *linear/sequential search*.
 ///
-/// It will gives two contiguous `char` to the predicate function.
+/// It will give two contiguous `char` to the predicate function.
 pub struct LinearStrGroupByMut<'a, P> {
     inner: &'a mut str,
     predicate: P,

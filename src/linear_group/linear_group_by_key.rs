@@ -125,6 +125,11 @@ macro_rules! group_by_key {
     }
 }
 
+/// An iterator that will return non-overlapping groups of equal elements
+/// in the slice using *linear/sequential search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct LinearGroupByKey<'a, T: 'a, F> {
     ptr: *const T,
     end: *const T,
@@ -162,6 +167,12 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupByKey<'a, T, P> {
 
 group_by_key!{ struct LinearGroupByKey, &'a [T], from_raw_parts }
 
+
+/// An iterator that will return non-overlapping *mutable* groups in the slice
+/// using *linear/sequential search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct LinearGroupByKeyMut<'a, T: 'a, F> {
     ptr: *mut T,
     end: *mut T,

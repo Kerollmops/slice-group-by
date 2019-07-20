@@ -89,6 +89,11 @@ macro_rules! str_group_by_key {
     }
 }
 
+/// An iterator that will return non-overlapping groups in the `str`
+/// using *linear/sequential search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct LinearStrGroupByKey<'a, F> {
     inner: &'a str,
     func: F,
@@ -102,6 +107,11 @@ impl<'a, F> LinearStrGroupByKey<'a, F> {
 
 str_group_by_key!{ struct LinearStrGroupByKey, &'a str, str_as_ptr, str_from_raw_parts }
 
+/// An iterator that will return non-overlapping *mutable* groups in the `str`
+/// using *linear/sequential search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct LinearStrGroupByKeyMut<'a, F> {
     inner: &'a mut str,
     func: F,

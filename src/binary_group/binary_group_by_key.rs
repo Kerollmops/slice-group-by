@@ -83,6 +83,10 @@ macro_rules! binary_group_by_key {
     }
 }
 
+/// An iterator that will return non-overlapping groups in the slice using *binary search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct BinaryGroupByKey<'a, T, F> {
     ptr: *const T,
     end: *const T,
@@ -120,6 +124,11 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for BinaryGroupByKey<'a, T, F> {
 
 binary_group_by_key!{ struct BinaryGroupByKey, &'a [T], from_raw_parts }
 
+/// An iterator that will return non-overlapping *mutable* groups
+/// in the slice using *binary search*.
+///
+/// It will give an element to the given function, producing a key and comparing
+/// the keys to determine groups.
 pub struct BinaryGroupByKeyMut<'a, T, F> {
     ptr: *mut T,
     end: *mut T,
