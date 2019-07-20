@@ -12,7 +12,7 @@
 //!
 //! let slice = &[1, 1, 1, 3, 3, 2, 2, 2];
 //!
-//! let mut iter = slice.linear_group_by(|a, b| a == b);
+//! let mut iter = slice.linear_group_by_key(|x| -x);
 //!
 //! assert_eq!(iter.next(), Some(&[1, 1, 1][..]));
 //! assert_eq!(iter.next(), Some(&[3, 3][..]));
@@ -86,7 +86,7 @@
 #[cfg(all(not(test), not(feature = "std")))]
 extern crate core as std;
 
-macro_rules! group_by_partial_eq {
+macro_rules! group_by_wrapped {
     (struct $name:ident, $elem:ty) => {
         impl<'a, T: 'a> $name<'a, T> {
             #[inline]
@@ -100,7 +100,7 @@ macro_rules! group_by_partial_eq {
             }
         }
 
-        impl<'a, T: 'a> Iterator for $name<'a, T>
+        impl<'a, T: 'a> std::iter::Iterator for $name<'a, T>
         where T: PartialEq,
         {
             type Item = $elem;
@@ -126,40 +126,51 @@ macro_rules! group_by_partial_eq {
             }
         }
 
-        impl<'a, T: 'a> FusedIterator for $name<'a, T>
+        impl<'a, T: 'a> std::iter::FusedIterator for $name<'a, T>
         where T: PartialEq,
         { }
     }
 }
 
-mod linear_group_by;
-mod binary_group_by;
-mod exponential_group_by;
-mod linear_str_group_by;
+mod linear_group;
+mod binary_group;
+mod exponential_group;
+mod linear_str_group;
 
 use std::cmp::{self, Ordering};
 
-pub use self::linear_group_by::{
+pub use self::linear_group::{
+    LinearGroupByKey,
     LinearGroupBy,
     LinearGroup,
+    LinearGroupByKeyMut,
     LinearGroupByMut,
     LinearGroupMut,
 };
-pub use self::binary_group_by::{
+
+pub use self::binary_group::{
+    BinaryGroupByKey,
     BinaryGroupBy,
     BinaryGroup,
+    BinaryGroupByKeyMut,
     BinaryGroupByMut,
     BinaryGroupMut,
 };
-pub use self::exponential_group_by::{
+
+pub use self::exponential_group::{
+    ExponentialGroupByKey,
     ExponentialGroupBy,
     ExponentialGroup,
+    ExponentialGroupByKeyMut,
     ExponentialGroupByMut,
     ExponentialGroupMut,
 };
-pub use self::linear_str_group_by::{
+
+pub use self::linear_str_group::{
+    LinearStrGroupByKey,
     LinearStrGroupBy,
     LinearStrGroup,
+    LinearStrGroupByKeyMut,
     LinearStrGroupByMut,
     LinearStrGroupMut,
 };
@@ -295,6 +306,12 @@ where F: FnMut(&T) -> B,
 /// defined by a predicate.
 pub trait GroupBy<T>
 {
+    /// Returns an iterator on slice groups based that will use the given function to generate keys
+    /// and determine groups based on them. It uses *linear search* to iterate over groups.
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearGroupByKey<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq;
+
     /// Returns an iterator on slice groups using the *linear search* method.
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool;
@@ -305,6 +322,15 @@ pub trait GroupBy<T>
     /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn linear_group(&self) -> LinearGroup<T>
     where T: PartialEq;
+
+    /// Returns an iterator on slice groups based that will use the given function to generate keys
+    /// and determine groups based on them. It uses *binary search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    fn binary_group_by_key<F, K>(&self, func: F) -> BinaryGroupByKey<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq;
 
     /// Returns an iterator on slice groups using the *binary search* method.
     ///
@@ -322,6 +348,15 @@ pub trait GroupBy<T>
     /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn binary_group(&self) -> BinaryGroup<T>
     where T: PartialEq;
+
+    /// Returns an iterator on slice groups based that will use the given function to generate keys
+    /// and determine groups based on them. It uses *exponential search* to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    fn exponential_group_by_key<F, K>(&self, func: F) -> ExponentialGroupByKey<T, F>
+    where F: Fn(&T) -> K,
+          K: PartialEq;
 
     /// Returns an iterator on slice groups using the *exponential search* method.
     ///
@@ -345,6 +380,13 @@ pub trait GroupBy<T>
 /// groups defined by a predicate.
 pub trait GroupByMut<T>
 {
+    /// Returns an iterator on *mutable* slice groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *linear search*
+    /// to iterate over groups.
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearGroupByKeyMut<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq;
+
     /// Returns an iterator on *mutable* slice groups using the *linear search* method.
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool;
@@ -355,6 +397,16 @@ pub trait GroupByMut<T>
     /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn linear_group_mut(&mut self) -> LinearGroupMut<T>
     where T: PartialEq;
+
+    /// Returns an iterator on *mutable* slice groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *binary search*
+    /// to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    fn binary_group_by_key_mut<F, K>(&mut self, func: F) -> BinaryGroupByKeyMut<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *binary search* method.
     ///
@@ -372,6 +424,16 @@ pub trait GroupByMut<T>
     /// [`PartialEq::eq`]: https://doc.rust-lang.org/std/cmp/trait.PartialEq.html#tymethod.eq
     fn binary_group_mut(&mut self) -> BinaryGroupMut<T>
     where T: PartialEq;
+
+    /// Returns an iterator on *mutable* slice groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *exponential search*
+    /// to iterate over groups.
+    ///
+    /// The predicate function should implement an order consistent with
+    /// the sort order of the slice.
+    fn exponential_group_by_key_mut<F, K>(&mut self, func: F) -> ExponentialGroupByKeyMut<T, F>
+    where F: Fn(&T) -> K,
+          K: PartialEq;
 
     /// Returns an iterator on *mutable* slice groups using the *exponential search* method.
     ///
@@ -393,6 +455,13 @@ pub trait GroupByMut<T>
 
 impl<T> GroupBy<T> for [T]
 {
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearGroupByKey<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq
+    {
+        LinearGroupByKey::new(self, func)
+    }
+
     fn linear_group_by<P>(&self, predicate: P) -> LinearGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -405,6 +474,13 @@ impl<T> GroupBy<T> for [T]
         LinearGroup::new(self)
     }
 
+    fn binary_group_by_key<F, K>(&self, func: F) -> BinaryGroupByKey<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq
+    {
+        BinaryGroupByKey::new(self, func)
+    }
+
     fn binary_group_by<P>(&self, predicate: P) -> BinaryGroupBy<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -415,6 +491,13 @@ impl<T> GroupBy<T> for [T]
     where T: PartialEq,
     {
         BinaryGroup::new(self)
+    }
+
+    fn exponential_group_by_key<F, K>(&self, func: F) -> ExponentialGroupByKey<T, F>
+    where F: Fn(&T) -> K,
+          K: PartialEq
+    {
+        ExponentialGroupByKey::new(self, func)
     }
 
     fn exponential_group_by<P>(&self, predicate: P) -> ExponentialGroupBy<T, P>
@@ -432,6 +515,13 @@ impl<T> GroupBy<T> for [T]
 
 impl<T> GroupByMut<T> for [T]
 {
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearGroupByKeyMut<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq
+    {
+        LinearGroupByKeyMut::new(self, func)
+    }
+
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -444,6 +534,13 @@ impl<T> GroupByMut<T> for [T]
         LinearGroupMut::new(self)
     }
 
+    fn binary_group_by_key_mut<F, K>(&mut self, func: F) -> BinaryGroupByKeyMut<T, F>
+    where F: FnMut(&T) -> K,
+          K: PartialEq
+    {
+        BinaryGroupByKeyMut::new(self, func)
+    }
+
     fn binary_group_by_mut<P>(&mut self, predicate: P) -> BinaryGroupByMut<T, P>
     where P: FnMut(&T, &T) -> bool,
     {
@@ -454,6 +551,13 @@ impl<T> GroupByMut<T> for [T]
     where T: PartialEq,
     {
         BinaryGroupMut::new(self)
+    }
+
+    fn exponential_group_by_key_mut<F, K>(&mut self, func: F) -> ExponentialGroupByKeyMut<T, F>
+    where F: Fn(&T) -> K,
+          K: PartialEq
+    {
+        ExponentialGroupByKeyMut::new(self, func)
     }
 
     fn exponential_group_by_mut<P>(&mut self, predicate: P) -> ExponentialGroupByMut<T, P>
@@ -473,6 +577,13 @@ impl<T> GroupByMut<T> for [T]
 /// defined by a predicate.
 pub trait StrGroupBy
 {
+    /// Returns an iterator on `str` groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *linear search*
+    /// to iterate over groups.
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearStrGroupByKey<F>
+    where F: FnMut(char) -> K,
+          K: PartialEq;
+
     /// Returns an iterator on `str` groups using the *linear search* method.
     fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
     where P: FnMut(char, char) -> bool;
@@ -488,6 +599,13 @@ pub trait StrGroupBy
 /// defined by a predicate.
 pub trait StrGroupByMut
 {
+    /// Returns an iterator on *mutable* `str` groups based that will use the given function
+    /// to generate keys and determine groups based on them. It uses *linear search*
+    /// to iterate over groups.
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearStrGroupByKeyMut<F>
+    where F: FnMut(char) -> K,
+          K: PartialEq;
+
     /// Returns an iterator on *mutable* `str` groups using the *linear search* method.
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>
     where P: FnMut(char, char) -> bool;
@@ -501,6 +619,13 @@ pub trait StrGroupByMut
 
 impl StrGroupBy for str
 {
+    fn linear_group_by_key<F, K>(&self, func: F) -> LinearStrGroupByKey<F>
+    where F: FnMut(char) -> K,
+          K: PartialEq
+    {
+        LinearStrGroupByKey::new(self, func)
+    }
+
     fn linear_group_by<P>(&self, predicate: P) -> LinearStrGroupBy<P>
     where P: FnMut(char, char) -> bool,
     {
@@ -514,6 +639,13 @@ impl StrGroupBy for str
 
 impl StrGroupByMut for str
 {
+    fn linear_group_by_key_mut<F, K>(&mut self, func: F) -> LinearStrGroupByKeyMut<F>
+    where F: FnMut(char) -> K,
+          K: PartialEq
+    {
+        LinearStrGroupByKeyMut::new(self, func)
+    }
+
     fn linear_group_by_mut<P>(&mut self, predicate: P) -> LinearStrGroupByMut<P>
     where P: FnMut(char, char) -> bool,
     {
