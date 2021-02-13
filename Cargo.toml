@@ -2,7 +2,7 @@
 edition = "2018"
 name = "slice-group-by"
 description = "Iterators over groups in a slice"
-version = "0.2.6"
+version = "0.3.0"
 documentation = "https://docs.rs/slice-group-by"
 repository = "https://github.com/Kerollmops/slice-group-by"
 authors = ["Kerollmops <renault.cle@gmail.com>"]
