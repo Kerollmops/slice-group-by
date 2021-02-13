@@ -88,18 +88,6 @@ extern crate core as std;
 
 macro_rules! group_by_wrapped {
     (struct $name:ident, $elem:ty) => {
-        impl<'a, T: 'a> $name<'a, T> {
-            #[inline]
-            pub fn is_empty(&self) -> bool {
-                self.0.is_empty()
-            }
-
-            #[inline]
-            pub fn remainder_len(&self) -> usize {
-                self.0.remainder_len()
-            }
-        }
-
         impl<'a, T: 'a> std::iter::Iterator for $name<'a, T>
         where T: PartialEq,
         {
