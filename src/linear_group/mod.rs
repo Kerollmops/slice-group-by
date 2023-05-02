@@ -227,6 +227,19 @@ mod tests {
         assert_eq!(iter.next_back(), Some(&[1, 2, 3, 4, 5][..]));
         assert_eq!(iter.next_back(), None);
     }
+
+    #[test]
+    fn group_by_key_mut() {
+        let slice = &mut [1, 2, 4, 5, 7, 8, 8];
+
+        let mut iter = LinearGroupByKeyMut::new(slice, |i: &i32| *i % 2);
+
+        assert_eq!(iter.next(), Some(&mut [1][..]));
+        assert_eq!(iter.next(), Some(&mut [2, 4][..]));
+        assert_eq!(iter.next(), Some(&mut [5, 7][..]));
+        assert_eq!(iter.next(), Some(&mut [8, 8][..]));
+        assert_eq!(iter.next(), None);
+    }
 }
 
 #[cfg(all(feature = "nightly", test))]
