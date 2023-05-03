@@ -3,6 +3,7 @@
 [![slice-group-by crate](https://img.shields.io/crates/v/slice-group-by.svg)](https://crates.io/crates/slice-group-by)
 [![slice-group-by documentation](https://docs.rs/slice-group-by/badge.svg)](https://docs.rs/slice-group-by)
 [![dependency status](https://deps.rs/repo/github/Kerollmops/slice-group-by/status.svg)](https://deps.rs/repo/github/Kerollmops/slice-group-by)
+[![build & tests worflow](https://github.com/github/docs/actions/workflows/ci.yml/badge.svg)](https://github.com/Kerollmops/slice-group-by/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/Kerollmops/slice-group-by.svg)](https://github.com/Kerollmops/slice-group-by)
 
 An implementation of the [`groupBy` Haskell function], providing tools for efficiently iterating over `slice` and `str` by groups defined by a function that specifies if two elements are in the same group.
