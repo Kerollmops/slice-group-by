@@ -182,9 +182,11 @@ pub struct LinearGroupByKeyMut<'a, T: 'a, F> {
 
 impl<'a, T, F> LinearGroupByKeyMut<'a, T, F> {
     pub fn new(slice: &'a mut [T], func: F) -> Self {
+        let ptr = slice.as_mut_ptr();
+        let end = unsafe { ptr.add(slice.len()) };
         LinearGroupByKeyMut {
-            ptr: slice.as_mut_ptr(),
-            end: unsafe { slice.as_mut_ptr().add(slice.len()) },
+            ptr,
+            end,
             func,
             _phantom: marker::PhantomData,
         }
