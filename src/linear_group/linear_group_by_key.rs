@@ -1,6 +1,6 @@
+use crate::offset_from;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::{fmt, marker};
-use crate::offset_from;
 
 macro_rules! group_by_key {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
@@ -17,13 +17,16 @@ macro_rules! group_by_key {
         }
 
         impl<'a, T: 'a, F, K> std::iter::Iterator for $name<'a, T, F>
-        where F: FnMut(&T) -> K,
-              K: PartialEq,
+        where
+            F: FnMut(&T) -> K,
+            K: PartialEq,
         {
             type Item = $elem;
 
             fn next(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let mut i = 0;
                 let mut ptr = self.ptr;
@@ -47,7 +50,7 @@ macro_rules! group_by_key {
                         if (self.func)(a) != (self.func)(b) {
                             let slice = $mkslice(self.ptr, i);
                             self.ptr = ptr;
-                            return Some(slice)
+                            return Some(slice);
                         }
                     }
                 }
@@ -63,7 +66,9 @@ macro_rules! group_by_key {
             }
 
             fn size_hint(&self) -> (usize, Option<usize>) {
-                if self.is_empty() { return (0, Some(0)) }
+                if self.is_empty() {
+                    return (0, Some(0));
+                }
 
                 let len = self.remainder_len();
                 (1, Some(len))
@@ -75,12 +80,15 @@ macro_rules! group_by_key {
         }
 
         impl<'a, T: 'a, F, K> std::iter::DoubleEndedIterator for $name<'a, T, F>
-        where F: FnMut(&T) -> K,
-              K: PartialEq,
+        where
+            F: FnMut(&T) -> K,
+            K: PartialEq,
         {
             fn next_back(&mut self) -> Option<Self::Item> {
                 // during the loop we retrieve two elements at `ptr` and `ptr - 1`.
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let mut i = 0;
 
@@ -105,7 +113,7 @@ macro_rules! group_by_key {
                             // because `end` is always an invalid bound
                             // we use `ptr` as `end` for the future call to `next`.
                             self.end = ptr;
-                            return Some(slice)
+                            return Some(slice);
                         }
 
                         ptr = ptr.sub(1);
@@ -119,10 +127,12 @@ macro_rules! group_by_key {
         }
 
         impl<'a, T: 'a, F, K> std::iter::FusedIterator for $name<'a, T, F>
-        where F: FnMut(&T) -> K,
-              K: PartialEq,
-        { }
-    }
+        where
+            F: FnMut(&T) -> K,
+            K: PartialEq,
+        {
+        }
+    };
 }
 
 /// An iterator that will return non-overlapping groups of equal elements
@@ -165,8 +175,7 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for LinearGroupByKey<'a, T, P> {
     }
 }
 
-group_by_key!{ struct LinearGroupByKey, &'a [T], from_raw_parts }
-
+group_by_key! { struct LinearGroupByKey, &'a [T], from_raw_parts }
 
 /// An iterator that will return non-overlapping *mutable* groups in the slice
 /// using *linear/sequential search*.
@@ -213,4 +222,4 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for LinearGroupByKeyMut<'a, T, F> {
     }
 }
 
-group_by_key!{ struct LinearGroupByKeyMut, &'a mut [T], from_raw_parts_mut }
+group_by_key! { struct LinearGroupByKeyMut, &'a mut [T], from_raw_parts_mut }
