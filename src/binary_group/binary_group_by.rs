@@ -1,7 +1,7 @@
-use std::slice::{from_raw_parts, from_raw_parts_mut};
-use std::cmp::Ordering::{Less, Greater};
-use std::{fmt, marker};
 use crate::offset_from;
+use std::cmp::Ordering::{Greater, Less};
+use std::slice::{from_raw_parts, from_raw_parts_mut};
+use std::{fmt, marker};
 
 macro_rules! binary_group_by {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
@@ -18,20 +18,29 @@ macro_rules! binary_group_by {
         }
 
         impl<'a, T: 'a, P> std::iter::Iterator for $name<'a, T, P>
-        where P: FnMut(&T, &T) -> bool,
+        where
+            P: FnMut(&T, &T) -> bool,
         {
             type Item = $elem;
 
             #[inline]
             fn next(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let first = unsafe { &*self.ptr };
 
                 let len = self.remainder_len();
                 let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
 
-                let predicate = |x: &T| if (self.predicate)(first, x) { Less } else { Greater };
+                let predicate = |x: &T| {
+                    if (self.predicate)(first, x) {
+                        Less
+                    } else {
+                        Greater
+                    }
+                };
                 let index = tail.binary_search_by(predicate).unwrap_err();
 
                 let left = unsafe { $mkslice(self.ptr, index + 1) };
@@ -41,7 +50,9 @@ macro_rules! binary_group_by {
             }
 
             fn size_hint(&self) -> (usize, Option<usize>) {
-                if self.is_empty() { return (0, Some(0)) }
+                if self.is_empty() {
+                    return (0, Some(0));
+                }
 
                 let len = self.remainder_len();
                 (1, Some(len))
@@ -53,18 +64,27 @@ macro_rules! binary_group_by {
         }
 
         impl<'a, T: 'a, P> std::iter::DoubleEndedIterator for $name<'a, T, P>
-        where P: FnMut(&T, &T) -> bool,
+        where
+            P: FnMut(&T, &T) -> bool,
         {
             #[inline]
             fn next_back(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let last = unsafe { &*self.end.sub(1) };
 
                 let len = self.remainder_len();
                 let head = unsafe { $mkslice(self.ptr, len - 1) };
 
-                let predicate = |x: &T| if (self.predicate)(last, x) { Greater } else { Less };
+                let predicate = |x: &T| {
+                    if (self.predicate)(last, x) {
+                        Greater
+                    } else {
+                        Less
+                    }
+                };
                 let index = head.binary_search_by(predicate).unwrap_err();
 
                 let right = unsafe { $mkslice(self.ptr.add(index), len - index) };
@@ -74,10 +94,11 @@ macro_rules! binary_group_by {
             }
         }
 
-        impl<'a, T: 'a, P> std::iter::FusedIterator for $name<'a, T, P>
-        where P: FnMut(&T, &T) -> bool,
-        { }
-    }
+        impl<'a, T: 'a, P> std::iter::FusedIterator for $name<'a, T, P> where
+            P: FnMut(&T, &T) -> bool
+        {
+        }
+    };
 }
 
 /// An iterator that will return non-overlapping groups in the slice using *binary search*.
@@ -119,7 +140,7 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupBy<'a, T, P> {
     }
 }
 
-binary_group_by!{ struct BinaryGroupBy, &'a [T], from_raw_parts }
+binary_group_by! { struct BinaryGroupBy, &'a [T], from_raw_parts }
 
 /// An iterator that will return non-overlapping *mutable* groups
 /// in the slice using *binary search*.
@@ -134,12 +155,15 @@ pub struct BinaryGroupByMut<'a, T, P> {
 }
 
 impl<'a, T: 'a, P> BinaryGroupByMut<'a, T, P>
-where P: FnMut(&T, &T) -> bool,
+where
+    P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a mut [T], predicate: P) -> Self {
+        let ptr = slice.as_mut_ptr();
+        let end = unsafe { ptr.add(slice.len()) };
         BinaryGroupByMut {
-            ptr: slice.as_mut_ptr(),
-            end: unsafe { slice.as_mut_ptr().add(slice.len()) },
+            ptr,
+            end,
             predicate,
             _phantom: marker::PhantomData,
         }
@@ -166,4 +190,4 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for BinaryGroupByMut<'a, T, P> {
     }
 }
 
-binary_group_by!{ struct BinaryGroupByMut, &'a mut [T], from_raw_parts_mut }
+binary_group_by! { struct BinaryGroupByMut, &'a mut [T], from_raw_parts_mut }

@@ -1,7 +1,7 @@
-use std::slice::{from_raw_parts, from_raw_parts_mut};
-use std::cmp::Ordering::{Less, Greater};
-use std::{fmt, marker};
 use crate::{exponential_search_by, offset_from};
+use std::cmp::Ordering::{Greater, Less};
+use std::slice::{from_raw_parts, from_raw_parts_mut};
+use std::{fmt, marker};
 
 macro_rules! exponential_group_by {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
@@ -18,19 +18,28 @@ macro_rules! exponential_group_by {
         }
 
         impl<'a, T: 'a, P> std::iter::Iterator for $name<'a, T, P>
-        where P: FnMut(&T, &T) -> bool,
+        where
+            P: FnMut(&T, &T) -> bool,
         {
             type Item = $elem;
 
             fn next(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let first = unsafe { &*self.ptr };
 
                 let len = self.remainder_len();
                 let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
 
-                let predicate = |x: &T| if (self.predicate)(first, x) { Less } else { Greater };
+                let predicate = |x: &T| {
+                    if (self.predicate)(first, x) {
+                        Less
+                    } else {
+                        Greater
+                    }
+                };
                 let index = exponential_search_by(tail, predicate).unwrap_err();
 
                 let left = unsafe { $mkslice(self.ptr, index + 1) };
@@ -40,7 +49,9 @@ macro_rules! exponential_group_by {
             }
 
             fn size_hint(&self) -> (usize, Option<usize>) {
-                if self.is_empty() { return (0, Some(0)) }
+                if self.is_empty() {
+                    return (0, Some(0));
+                }
 
                 let len = self.remainder_len();
                 (1, Some(len))
@@ -52,17 +63,26 @@ macro_rules! exponential_group_by {
         }
 
         impl<'a, T: 'a, P> std::iter::DoubleEndedIterator for $name<'a, T, P>
-        where P: FnMut(&T, &T) -> bool,
+        where
+            P: FnMut(&T, &T) -> bool,
         {
             fn next_back(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let last = unsafe { &*self.end.sub(1) };
 
                 let len = self.remainder_len();
                 let head = unsafe { $mkslice(self.ptr, len - 1) };
 
-                let predicate = |x: &T| if (self.predicate)(last, x) { Greater } else { Less };
+                let predicate = |x: &T| {
+                    if (self.predicate)(last, x) {
+                        Greater
+                    } else {
+                        Less
+                    }
+                };
                 let index = exponential_search_by(head, predicate).unwrap_err();
 
                 let right = unsafe { $mkslice(self.ptr.add(index), len - index) };
@@ -72,10 +92,11 @@ macro_rules! exponential_group_by {
             }
         }
 
-        impl<'a, T: 'a, P> std::iter::FusedIterator for $name<'a, T, P>
-        where P: FnMut(&T, &T) -> bool,
-        { }
-    }
+        impl<'a, T: 'a, P> std::iter::FusedIterator for $name<'a, T, P> where
+            P: FnMut(&T, &T) -> bool
+        {
+        }
+    };
 }
 
 /// An iterator that will reutrn non-overlapping groups in the slice using *exponential search*.
@@ -90,7 +111,8 @@ pub struct ExponentialGroupBy<'a, T, P> {
 }
 
 impl<'a, T: 'a, P> ExponentialGroupBy<'a, T, P>
-where P: FnMut(&T, &T) -> bool,
+where
+    P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a [T], predicate: P) -> Self {
         ExponentialGroupBy {
@@ -119,7 +141,7 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupBy<'a, T, P> {
     }
 }
 
-exponential_group_by!{ struct ExponentialGroupBy, &'a [T], from_raw_parts }
+exponential_group_by! { struct ExponentialGroupBy, &'a [T], from_raw_parts }
 
 /// An iterator that will reutrn non-overlapping *mutable* groups
 /// in the slice using *exponential search*.
@@ -134,12 +156,15 @@ pub struct ExponentialGroupByMut<'a, T, P> {
 }
 
 impl<'a, T: 'a, P> ExponentialGroupByMut<'a, T, P>
-where P: FnMut(&T, &T) -> bool,
+where
+    P: FnMut(&T, &T) -> bool,
 {
     pub fn new(slice: &'a mut [T], predicate: P) -> Self {
+        let ptr = slice.as_mut_ptr();
+        let end = unsafe { ptr.add(slice.len()) };
         ExponentialGroupByMut {
-            ptr: slice.as_mut_ptr(),
-            end: unsafe { slice.as_mut_ptr().add(slice.len()) },
+            ptr,
+            end,
             predicate,
             _phantom: marker::PhantomData,
         }
@@ -166,4 +191,4 @@ impl<'a, T: 'a + fmt::Debug, P> fmt::Debug for ExponentialGroupByMut<'a, T, P> {
     }
 }
 
-exponential_group_by!{ struct ExponentialGroupByMut, &'a mut [T], from_raw_parts_mut }
+exponential_group_by! { struct ExponentialGroupByMut, &'a mut [T], from_raw_parts_mut }

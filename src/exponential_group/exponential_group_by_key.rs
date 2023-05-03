@@ -1,7 +1,7 @@
-use std::slice::{from_raw_parts, from_raw_parts_mut};
-use std::cmp::Ordering::{Less, Greater};
-use std::{fmt, marker};
 use crate::{exponential_search_by, offset_from};
+use std::cmp::Ordering::{Greater, Less};
+use std::slice::{from_raw_parts, from_raw_parts_mut};
+use std::{fmt, marker};
 
 macro_rules! exponential_group_by_key {
     (struct $name:ident, $elem:ty, $mkslice:ident) => {
@@ -18,20 +18,29 @@ macro_rules! exponential_group_by_key {
         }
 
         impl<'a, T: 'a, F, K> std::iter::Iterator for $name<'a, T, F>
-        where F: FnMut(&T) -> K,
-              K: PartialEq
+        where
+            F: FnMut(&T) -> K,
+            K: PartialEq,
         {
             type Item = $elem;
 
             fn next(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let first = unsafe { &*self.ptr };
 
                 let len = self.remainder_len();
                 let tail = unsafe { $mkslice(self.ptr.add(1), len - 1) };
 
-                let predicate = |x: &T| if (self.func)(first) == (self.func)(x) { Less } else { Greater };
+                let predicate = |x: &T| {
+                    if (self.func)(first) == (self.func)(x) {
+                        Less
+                    } else {
+                        Greater
+                    }
+                };
                 let index = exponential_search_by(tail, predicate).unwrap_err();
 
                 let left = unsafe { $mkslice(self.ptr, index + 1) };
@@ -41,7 +50,9 @@ macro_rules! exponential_group_by_key {
             }
 
             fn size_hint(&self) -> (usize, Option<usize>) {
-                if self.is_empty() { return (0, Some(0)) }
+                if self.is_empty() {
+                    return (0, Some(0));
+                }
 
                 let len = self.remainder_len();
                 (1, Some(len))
@@ -53,18 +64,27 @@ macro_rules! exponential_group_by_key {
         }
 
         impl<'a, T: 'a, F, K> std::iter::DoubleEndedIterator for $name<'a, T, F>
-        where F: FnMut(&T) -> K,
-              K: PartialEq
+        where
+            F: FnMut(&T) -> K,
+            K: PartialEq,
         {
             fn next_back(&mut self) -> Option<Self::Item> {
-                if self.is_empty() { return None }
+                if self.is_empty() {
+                    return None;
+                }
 
                 let last = unsafe { &*self.end.sub(1) };
 
                 let len = self.remainder_len();
                 let head = unsafe { $mkslice(self.ptr, len - 1) };
 
-                let predicate = |x: &T| if (self.func)(last) == (self.func)(x) { Greater } else { Less };
+                let predicate = |x: &T| {
+                    if (self.func)(last) == (self.func)(x) {
+                        Greater
+                    } else {
+                        Less
+                    }
+                };
                 let index = exponential_search_by(head, predicate).unwrap_err();
 
                 let right = unsafe { $mkslice(self.ptr.add(index), len - index) };
@@ -75,10 +95,12 @@ macro_rules! exponential_group_by_key {
         }
 
         impl<'a, T: 'a, F, K> std::iter::FusedIterator for $name<'a, T, F>
-        where F: FnMut(&T) -> K,
-              K: PartialEq
-        { }
-    }
+        where
+            F: FnMut(&T) -> K,
+            K: PartialEq,
+        {
+        }
+    };
 }
 
 /// An iterator that will reutrn non-overlapping groups in the slice using *exponential search*.
@@ -120,7 +142,7 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKey<'a, T, F> {
     }
 }
 
-exponential_group_by_key!{ struct ExponentialGroupByKey, &'a [T], from_raw_parts }
+exponential_group_by_key! { struct ExponentialGroupByKey, &'a [T], from_raw_parts }
 
 /// An iterator that will reutrn non-overlapping *mutable* groups
 /// in the slice using *exponential search*.
@@ -136,9 +158,11 @@ pub struct ExponentialGroupByKeyMut<'a, T, F> {
 
 impl<'a, T: 'a, F> ExponentialGroupByKeyMut<'a, T, F> {
     pub fn new(slice: &'a mut [T], func: F) -> Self {
+        let ptr = slice.as_mut_ptr();
+        let end = unsafe { ptr.add(slice.len()) };
         ExponentialGroupByKeyMut {
-            ptr: slice.as_mut_ptr(),
-            end: unsafe { slice.as_mut_ptr().add(slice.len()) },
+            ptr,
+            end,
             func,
             _phantom: marker::PhantomData,
         }
@@ -165,4 +189,4 @@ impl<'a, T: 'a + fmt::Debug, F> fmt::Debug for ExponentialGroupByKeyMut<'a, T, F
     }
 }
 
-exponential_group_by_key!{ struct ExponentialGroupByKeyMut, &'a mut [T], from_raw_parts_mut }
+exponential_group_by_key! { struct ExponentialGroupByKeyMut, &'a mut [T], from_raw_parts_mut }
